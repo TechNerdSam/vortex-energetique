@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détecteur de Vortex Énergétiques v2.0</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #020418;
+            color: #e0e0e0;
+            overflow: hidden; /* Empêche le défilement */
+        }
+        h1, .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Arrière-plan animé "Cosmic Energy" */
+        #background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(ellipse at 70% 30%, #4f46e5 0%, transparent 50%),
+                        radial-gradient(ellipse at 30% 70%, #ec4899 0%, transparent 50%);
+            animation: cosmic-flow 25s alternate infinite;
+        }
+        @keyframes cosmic-flow {
+            0% { transform: scale(1) rotate(0deg); opacity: 0.6; }
+            100% { transform: scale(1.5) rotate(90deg); opacity: 0.8; }
+        }
+
+        /* Style Glassmorphism pour les panneaux */
+        .panel-glass {
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Bouton de scan amélioré */
+        .scan-button {
+            background-image: linear-gradient(to right, #2dd4bf, #38bdf8, #818cf8);
+            background-size: 200% auto;
+            transition: background-position 0.5s, transform 0.2s, box-shadow 0.3s;
+        }
+        .scan-button:hover {
+            background-position: right center;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px #38bdf8, 0 0 30px #818cf8;
+        }
+        .scan-button:disabled {
+            cursor: not-allowed;
+            background: #334155;
+            box-shadow: none;
+            transform: scale(1);
+        }
+
+        /* Spinner high-tech */
+        .spinner {
+            border-color: rgba(56, 189, 248, 0.2);
+            border-left-color: #ec4899;
+            border-right-color: #ec4899;
+            animation: spin 1.5s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Styles pour la nouvelle boussole holographique */
+        .compass-dial {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto;
+            border: 2px solid rgba(56, 189, 248, 0.3);
+            background: radial-gradient(circle, transparent 50%, rgba(56, 189, 248, 0.1) 80%);
+        }
+        .compass-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 1px dashed rgba(56, 189, 248, 0.5);
+            animation: spin 20s linear infinite;
+        }
+        .compass-ring.fast {
+            animation-duration: 10s;
+        }
+        .compass-needle {
+            width: 2px;
+            height: 70px;
+            background: linear-gradient(to top, transparent, #fb7185, #fb7185);
+            box-shadow: 0 0 10px #fb7185;
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(0deg);
+            transition: transform 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        .compass-dial [class*='dir-'] {
+            position: absolute;
+            color: #9ca3af;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+        }
+        .dir-n { top: 8px; left: 50%; transform: translateX(-50%); }
+        .dir-e { top: 50%; right: 8px; transform: translateY(-50%); }
+        .dir-s { bottom: 8px; left: 50%; transform: translateX(-50%); }
+        .dir-w { top: 50%; left: 8px; transform: translateY(-50%); }
+
+        /* Animation de frappe pour le texte */
+        #resultText::after {
+            content: '█';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="background-animation"></div>
+
+    <main class="w-full max-w-2xl mx-auto text-center z-10">
+        
+        <header class="mb-8">
+             <div class="inline-block p-4 mb-4 text-cyan-300 bg-gray-900/50 rounded-full border border-cyan-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m15.5 15.5-2.5-2.5-2.5 2.5-2.5-2.5 2.5-2.5 2.5-2.5 2.5 2.5 2.5 2.5-2.5 2.5z"></path>
+                </svg>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold tracking-wider text-white uppercase" style="text-shadow: 0 0 10px #38bdf8;">Détecteur de Vortex</h1>
+            <p class="text-lg text-gray-400 mt-2">Analyse des perturbations énergétiques ambiantes</p>
+        </header>
+
+        <div class="panel-glass rounded-2xl p-6 md:p-10">
+            <p class="mb-8 text-gray-300">
+                Le système est prêt. Calibrez les capteurs sur les flux énergétiques locaux et lancez une analyse pour révéler les anomalies et points de convergence.
+            </p>
+            <button id="scanButton" class="scan-button w-full md:w-auto px-12 py-4 text-xl font-bold text-gray-900 uppercase rounded-lg transition-all duration-300 ease-in-out transform focus:outline-none">
+                Lancer le Scan
+            </button>
+        </div>
+
+        <section id="resultsContainer" class="mt-8 opacity-0 transform translate-y-4 transition-all duration-700">
+            <div id="scanIndicator" class="hidden panel-glass flex-col items-center justify-center rounded-2xl p-6 min-h-[350px]">
+                <div class="spinner w-12 h-12 rounded-full border-4"></div>
+                <p id="scanStatus" class="mt-4 text-cyan-300 font-orbitron tracking-widest animate-pulse">CALIBRATION...</p>
+            </div>
+        </section>
+
+        <!-- Fenêtre modale pour les résultats -->
+        <div id="resultModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+            <div id="modalContent" class="panel-glass w-full max-w-lg rounded-2xl p-8 text-center relative transform transition-all duration-300 scale-95 opacity-0">
+                <button id="closeModalButton" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <h2 class="text-2xl font-orbitron font-bold text-cyan-300 mb-4">Résultat de l'analyse</h2>
+                <p id="resultText" class="text-xl text-white mb-6 max-w-lg min-h-[56px]"></p>
+
+                <div id="compassContainer" class="hidden">
+                    <div class="compass-dial">
+                        <div class="compass-ring"></div>
+                        <div class="compass-ring fast"></div>
+                        <div class="dir-n">N</div>
+                        <div class="dir-e">E</div>
+                        <div class="dir-s">S</div>
+                        <div class="dir-w">W</div>
+                        <div class="compass-needle" id="compassNeedle"></div>
+                    </div>
+                    <p id="directionText" class="mt-4 text-lg text-cyan-200 font-orbitron tracking-wider"></p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-12 text-gray-600 text-sm">
+            <p>&copy; 2025 Laboratoires Spectra. Simulation à but de divertissement.</p>
+        </footer>
+    </main>
+
+    <script>
+        const scanButton = document.getElementById('scanButton');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const scanIndicator = document.getElementById('scanIndicator');
+        const scanStatus = document.getElementById('scanStatus');
+        
+        // Éléments de la modale
+        const resultModal = document.getElementById('resultModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const resultText = document.getElementById('resultText');
+        const compassContainer = document.getElementById('compassContainer');
+        const compassNeedle = document.getElementById('compassNeedle');
+        const directionText = document.getElementById('directionText');
+
+        const statusMessages = [ "CALIBRATION...", "SCAN DES FRÉQUENCES...", "TRIANGULATION...", "INTERPRÉTATION..." ];
+
+        const stableResults = [
+            "Aucun vortex significatif détecté. L'environnement est énergétiquement stable.",
+            "Flux harmonique détecté. L'énergie circule de manière positive, favorisant le bien-être.",
+            "Signature énergétique neutre. L'environnement est parfaitement équilibré.",
+        ];
+
+        const vortexTypes = [
+            { type: "de créativité", intensity: ["faible", "modérée"] },
+            { type: "de convergence", intensity: ["modérée", "forte"] },
+            { type: "de turbulence", intensity: ["faible", "forte"] },
+            { type: "tellurique", intensity: ["modérée", "puissant"] },
+            { type: "résiduel", intensity: ["très faible"] }
+        ];
+
+        scanButton.addEventListener('click', () => {
+            scanButton.disabled = true;
+            scanButton.textContent = "GÉOLOCALISATION...";
+            compassContainer.classList.add('hidden');
+            resultsContainer.style.opacity = '1';
+            resultsContainer.style.transform = 'translateY(0)';
+            scanIndicator.style.display = 'flex'; // Afficher l'indicateur de scan
+            navigator.geolocation.getCurrentPosition(locationSuccess, locationError);
+        });
+
+        async function locationSuccess(position) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
+                const data = await response.json();
+                const locationName = data.address.city || data.address.town || data.address.village || "votre zone";
+                startScan(locationName);
+            } catch (error) {
+                console.error("Erreur de géocodage:", error);
+                startScan();
+            }
+        }
+
+        function locationError(error) {
+            console.warn(`ERREUR GÉO (${error.code}): ${error.message}`);
+            startScan();
+        }
+
+        function startScan(locationName = null) {
+            scanButton.textContent = "ANALYSE EN COURS...";
+            let statusIndex = 0;
+            const statusInterval = setInterval(() => {
+                statusIndex++;
+                if (statusIndex < statusMessages.length) {
+                    scanStatus.textContent = statusMessages[statusIndex];
+                } else {
+                    clearInterval(statusInterval);
+                }
+            }, 1500);
+            setTimeout(() => displayResults(locationName), statusMessages.length * 1500);
+        }
+
+        function angleToDirection(angle) {
+            const directions = ['Nord', 'Nord-Est', 'Est', 'Sud-Est', 'Sud', 'Sud-Ouest', 'Ouest', 'Nord-Ouest'];
+            return directions[Math.round(angle / 45) % 8];
+        }
+
+        function typeWriter(element, text, speed = 50) {
+            element.innerHTML = "";
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                }
+            }
+            type();
+        }
+
+        function displayResults(locationName = null) {
+            const isVortexDetected = Math.random() > 0.25;
+            let resultString;
+            
+            if (isVortexDetected) {
+                const vortex = vortexTypes[Math.floor(Math.random() * vortexTypes.length)];
+                const intensity = vortex.intensity[Math.floor(Math.random() * vortex.intensity.length)];
+                const distance = Math.floor(Math.random() * 45) + 5;
+                const angle = Math.floor(Math.random() * 360);
+                const direction = angleToDirection(angle);
+                const locationString = locationName ? `à ${locationName}` : "dans votre zone";
+
+                resultString = `Vortex ${vortex.type} d'intensité ${intensity} localisé ${locationString}.`;
+                
+                compassNeedle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+                directionText.textContent = `Position : ${direction} | ~${distance}m`;
+                compassContainer.classList.remove('hidden');
+            } else {
+                resultString = stableResults[Math.floor(Math.random() * stableResults.length)];
+                compassContainer.classList.add('hidden');
+            }
+            
+            scanIndicator.style.display = 'none';
+            typeWriter(resultText, resultString);
+            
+            // Afficher la modale avec animation
+            resultModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+
+
+            scanButton.disabled = false;
+            scanButton.textContent = "Lancer un nouveau Scan";
+        }
+        
+        function closeModal() {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                resultModal.classList.add('hidden');
+            }, 300); // Durée de la transition
+        }
+
+        closeModalButton.addEventListener('click', closeModal);
+        resultModal.addEventListener('click', (event) => {
+            // Fermer si on clique sur le fond de la modale
+            if (event.target === resultModal) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
+
