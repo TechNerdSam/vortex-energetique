@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détecteur de Vortex Énergétiques v2.0</title>
+    <title>Détecteur de Vortex Énergétiques v4.1 - Architecture Fiabilisée</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -15,13 +15,11 @@
             font-family: 'Roboto', sans-serif;
             background-color: #020418;
             color: #e0e0e0;
-            overflow: hidden; /* Empêche le défilement */
+            overflow: hidden;
         }
         h1, .font-orbitron {
             font-family: 'Orbitron', sans-serif;
         }
-
-        /* Arrière-plan animé "Cosmic Energy" */
         #background-animation {
             position: fixed;
             top: 0;
@@ -37,8 +35,6 @@
             0% { transform: scale(1) rotate(0deg); opacity: 0.6; }
             100% { transform: scale(1.5) rotate(90deg); opacity: 0.8; }
         }
-
-        /* Style Glassmorphism pour les panneaux */
         .panel-glass {
             background: rgba(17, 24, 39, 0.6);
             backdrop-filter: blur(12px);
@@ -46,26 +42,23 @@
             border: 1px solid rgba(56, 189, 248, 0.2);
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
-
-        /* Bouton de scan amélioré */
         .scan-button {
             background-image: linear-gradient(to right, #2dd4bf, #38bdf8, #818cf8);
             background-size: 200% auto;
-            transition: background-position 0.5s, transform 0.2s, box-shadow 0.3s;
+            transition: background-position 0.5s, transform 0.2s, box-shadow 0.3s, background-color 0.3s;
         }
-        .scan-button:hover {
+        .scan-button:hover:not(:disabled) {
             background-position: right center;
             transform: scale(1.05);
             box-shadow: 0 0 20px #38bdf8, 0 0 30px #818cf8;
         }
         .scan-button:disabled {
             cursor: not-allowed;
-            background: #334155;
+            background-image: none;
+            background-color: #334155;
             box-shadow: none;
             transform: scale(1);
         }
-
-        /* Spinner high-tech */
         .spinner {
             border-color: rgba(56, 189, 248, 0.2);
             border-left-color: #ec4899;
@@ -75,52 +68,17 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-
-        /* Styles pour la nouvelle boussole holographique */
-        .compass-dial {
-            width: 180px;
-            height: 180px;
+        #radarCanvas {
+            background: radial-gradient(circle, rgba(14, 116, 144, 0.1) 0%, rgba(8, 47, 73, 0.5) 100%);
             border-radius: 50%;
-            position: relative;
-            margin: 0 auto;
-            border: 2px solid rgba(56, 189, 248, 0.3);
-            background: radial-gradient(circle, transparent 50%, rgba(56, 189, 248, 0.1) 80%);
         }
-        .compass-ring {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            border: 1px dashed rgba(56, 189, 248, 0.5);
-            animation: spin 20s linear infinite;
+        .radar-sweep {
+            transform-origin: 100% 50%;
+            animation: spin-slow 4s linear infinite;
         }
-        .compass-ring.fast {
-            animation-duration: 10s;
+        @keyframes spin-slow {
+            to { transform: rotate(360deg); }
         }
-        .compass-needle {
-            width: 2px;
-            height: 70px;
-            background: linear-gradient(to top, transparent, #fb7185, #fb7185);
-            box-shadow: 0 0 10px #fb7185;
-            position: absolute;
-            bottom: 50%;
-            left: 50%;
-            transform-origin: bottom center;
-            transform: translateX(-50%) rotate(0deg);
-            transition: transform 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-        }
-        .compass-dial [class*='dir-'] {
-            position: absolute;
-            color: #9ca3af;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
-        }
-        .dir-n { top: 8px; left: 50%; transform: translateX(-50%); }
-        .dir-e { top: 50%; right: 8px; transform: translateY(-50%); }
-        .dir-s { bottom: 8px; left: 50%; transform: translateX(-50%); }
-        .dir-w { top: 50%; left: 8px; transform: translateY(-50%); }
-
-        /* Animation de frappe pour le texte */
         #resultText::after {
             content: '█';
             animation: blink 1s step-end infinite;
@@ -128,11 +86,23 @@
         @keyframes blink {
             50% { opacity: 0; }
         }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
     <div id="background-animation"></div>
+    <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
     <main class="w-full max-w-2xl mx-auto text-center z-10">
         
@@ -143,47 +113,53 @@
                 </svg>
             </div>
             <h1 class="text-4xl md:text-5xl font-bold tracking-wider text-white uppercase" style="text-shadow: 0 0 10px #38bdf8;">Détecteur de Vortex</h1>
-            <p class="text-lg text-gray-400 mt-2">Analyse des perturbations énergétiques ambiantes</p>
+            <p class="text-lg text-gray-400 mt-2">Analyse des perturbations énergétiques par géolocalisation</p>
         </header>
 
         <div class="panel-glass rounded-2xl p-6 md:p-10">
-            <p class="mb-8 text-gray-300">
-                Le système est prêt. Calibrez les capteurs sur les flux énergétiques locaux et lancez une analyse pour révéler les anomalies et points de convergence.
+            <p id="mainMessage" class="mb-8 text-gray-300 transition-colors duration-300 min-h-[48px]">
+                Le système est prêt. Calibrez les capteurs sur votre position actuelle pour lancer une analyse radar.
             </p>
             <button id="scanButton" class="scan-button w-full md:w-auto px-12 py-4 text-xl font-bold text-gray-900 uppercase rounded-lg transition-all duration-300 ease-in-out transform focus:outline-none">
                 Lancer le Scan
             </button>
         </div>
 
-        <section id="resultsContainer" class="mt-8 opacity-0 transform translate-y-4 transition-all duration-700">
-            <div id="scanIndicator" class="hidden panel-glass flex-col items-center justify-center rounded-2xl p-6 min-h-[350px]">
+        <section id="scanIndicatorContainer" class="mt-8 h-24 flex items-center justify-center">
+            <div id="scanIndicator" class="hidden flex-col items-center justify-center">
                 <div class="spinner w-12 h-12 rounded-full border-4"></div>
                 <p id="scanStatus" class="mt-4 text-cyan-300 font-orbitron tracking-widest animate-pulse">CALIBRATION...</p>
             </div>
         </section>
 
-        <!-- Fenêtre modale pour les résultats -->
-        <div id="resultModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div id="resultModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
             <div id="modalContent" class="panel-glass w-full max-w-lg rounded-2xl p-8 text-center relative transform transition-all duration-300 scale-95 opacity-0">
-                <button id="closeModalButton" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button id="closeModalButton" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors" aria-label="Fermer la fenêtre">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
-                <h2 class="text-2xl font-orbitron font-bold text-cyan-300 mb-4">Résultat de l'analyse</h2>
-                <p id="resultText" class="text-xl text-white mb-6 max-w-lg min-h-[56px]"></p>
-
-                <div id="compassContainer" class="hidden">
-                    <div class="compass-dial">
-                        <div class="compass-ring"></div>
-                        <div class="compass-ring fast"></div>
-                        <div class="dir-n">N</div>
-                        <div class="dir-e">E</div>
-                        <div class="dir-s">S</div>
-                        <div class="dir-w">W</div>
-                        <div class="compass-needle" id="compassNeedle"></div>
+                <h2 id="modalTitle" class="text-2xl font-orbitron font-bold text-cyan-300 mb-4">Résultat de l'analyse Radar</h2>
+                
+                <div id="modalBody">
+                    <p id="resultText" class="text-xl text-white mb-4 max-w-lg min-h-[56px]"></p>
+                    <div id="radarContainer" class="hidden w-full aspect-square max-w-[300px] mx-auto my-4 relative">
+                        <canvas id="radarCanvas" width="300" height="300"></canvas>
+                        <div class="absolute inset-0 pointer-events-none">
+                            <div class="w-full h-px bg-cyan-400/20 absolute top-1/2 left-0 -translate-y-1/2"></div>
+                            <div class="h-full w-px bg-cyan-400/20 absolute left-1/2 top-0 -translate-x-1/2"></div>
+                            <div class="absolute inset-0 text-cyan-300 font-orbitron text-xs">
+                                <span class="absolute top-1 left-1/2 -translate-x-1/2">N</span>
+                                <span class="absolute right-1 top-1/2 -translate-y-1/2">E</span>
+                                <span class="absolute bottom-1 left-1/2 -translate-x-1/2">S</span>
+                                <span class="absolute left-1 top-1/2 -translate-y-1/2">W</span>
+                            </div>
+                        </div>
+                        <div class="absolute top-0 left-0 w-full h-full">
+                             <div class="w-1/2 h-full bg-gradient-to-r from-cyan-400/0 to-cyan-400/30 radar-sweep"></div>
+                        </div>
                     </div>
-                    <p id="directionText" class="mt-4 text-lg text-cyan-200 font-orbitron tracking-wider"></p>
+                    <div id="vortexList" class="text-left text-sm mt-4 max-h-24 overflow-y-auto"></div>
                 </div>
             </div>
         </div>
@@ -194,145 +170,255 @@
     </main>
 
     <script>
-        const scanButton = document.getElementById('scanButton');
-        const resultsContainer = document.getElementById('resultsContainer');
-        const scanIndicator = document.getElementById('scanIndicator');
-        const scanStatus = document.getElementById('scanStatus');
-        
-        // Éléments de la modale
-        const resultModal = document.getElementById('resultModal');
-        const modalContent = document.getElementById('modalContent');
-        const closeModalButton = document.getElementById('closeModalButton');
-        const resultText = document.getElementById('resultText');
-        const compassContainer = document.getElementById('compassContainer');
-        const compassNeedle = document.getElementById('compassNeedle');
-        const directionText = document.getElementById('directionText');
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- CONFIGURATION ---
+        const CONFIG = {
+            MAX_RADAR_RANGE_KM: 5000,
+            SCAN_STEP_DELAY_MS: 1200,
+            GEOLOCATION_TIMEOUT_MS: 10000,
+        };
 
-        const statusMessages = [ "CALIBRATION...", "SCAN DES FRÉQUENCES...", "TRIANGULATION...", "INTERPRÉTATION..." ];
+        // --- CACHE DES ÉLÉMENTS DU DOM ---
+        const DOMElements = {
+            scanButton: document.getElementById('scanButton'),
+            mainMessage: document.getElementById('mainMessage'),
+            scanIndicator: document.getElementById('scanIndicator'),
+            scanStatus: document.getElementById('scanStatus'),
+            resultModal: document.getElementById('resultModal'),
+            modalContent: document.getElementById('modalContent'),
+            closeModalButton: document.getElementById('closeModalButton'),
+            modalTitle: document.getElementById('modalTitle'),
+            resultText: document.getElementById('resultText'),
+            radarContainer: document.getElementById('radarContainer'),
+            vortexList: document.getElementById('vortexList'),
+            announcer: document.getElementById('announcer'),
+            radarCanvas: document.getElementById('radarCanvas'),
+        };
+        const radarCtx = DOMElements.radarCanvas.getContext('2d');
 
-        const stableResults = [
-            "Aucun vortex significatif détecté. L'environnement est énergétiquement stable.",
-            "Flux harmonique détecté. L'énergie circule de manière positive, favorisant le bien-être.",
-            "Signature énergétique neutre. L'environnement est parfaitement équilibré.",
+        // --- DONNÉES STATIQUES ---
+        const VORTEX_LOCATIONS = [
+            { name: "Forêt de Brocéliande", type: "tellurique", intensity: "puissant", lat: 48.005, lon: -2.29 }, { name: "Mont Saint-Michel", type: "de convergence", intensity: "forte", lat: 48.636, lon: -1.511 }, { name: "Alignements de Carnac", type: "résiduel", intensity: "modérée", lat: 47.585, lon: -3.08 }, { name: "Cathédrale de Chartres", type: "spirituel", intensity: "forte", lat: 48.447, lon: 1.488 }, { name: "Rennes-le-Château", type: "de turbulence", intensity: "instable", lat: 42.927, lon: 2.263 }, { name: "Grotte de Lourdes", type: "curatif", intensity: "très forte", lat: 43.097, lon: -0.058 }, { name: "Mont Bugarach", type: "énigmatique", intensity: "variable", lat: 42.871, lon: 2.349 }, { name: "Stonehenge, UK", type: "ancestral", intensity: "puissant", lat: 51.178, lon: -1.826 }, { name: "Pyramide de Gizeh, Égypte", type: "cosmique", intensity: "immense", lat: 29.979, lon: 31.134 }, { name: "Sedona, USA", type: "d'amplification", intensity: "très forte", lat: 34.869, lon: -111.761 }, { name: "Mont Shasta, USA", type: "interdimensionnel", intensity: "mystique", lat: 41.409, lon: -122.195 }, { name: "Lac Titicaca, Bolivie/Pérou", type: "spirituel", intensity: "élevée", lat: -16.5, lon: -69.0 }, { name: "Mont Kailash, Tibet", type: "divin", intensity: "transcendant", lat: 31.066, lon: 81.312 }, { name: "Uluru, Australie", type: "primordial", intensity: "brute", lat: -25.344, lon: 131.036 }, { name: "Mont Choungui, Mayotte", type: "volcanique", intensity: "émergent", lat: -12.960, lon: 45.138 }, { name: "Teotihuacan, Mexique", type: "cosmologique", intensity: "puissant", lat: 19.692, lon: -98.843 }
         ];
 
-        const vortexTypes = [
-            { type: "de créativité", intensity: ["faible", "modérée"] },
-            { type: "de convergence", intensity: ["modérée", "forte"] },
-            { type: "de turbulence", intensity: ["faible", "forte"] },
-            { type: "tellurique", intensity: ["modérée", "puissant"] },
-            { type: "résiduel", intensity: ["très faible"] }
-        ];
+        // --- GESTION D'ÉTAT DE L'UI ---
+        const uiState = { IDLE: 'IDLE', SCANNING: 'SCANNING', SHOWING_RESULTS: 'SHOWING_RESULTS' };
+        let currentState = uiState.IDLE;
+        let scanInterval;
 
-        scanButton.addEventListener('click', () => {
-            scanButton.disabled = true;
-            scanButton.textContent = "GÉOLOCALISATION...";
-            compassContainer.classList.add('hidden');
-            resultsContainer.style.opacity = '1';
-            resultsContainer.style.transform = 'translateY(0)';
-            scanIndicator.style.display = 'flex'; // Afficher l'indicateur de scan
-            navigator.geolocation.getCurrentPosition(locationSuccess, locationError);
-        });
+        const setUIState = (newState) => {
+            currentState = newState;
+            switch (newState) {
+                case uiState.IDLE:
+                    DOMElements.scanButton.disabled = false;
+                    DOMElements.scanButton.textContent = "Lancer le Scan";
+                    DOMElements.scanIndicator.classList.add('hidden');
+                    DOMElements.mainMessage.textContent = "Le système est prêt. Calibrez les capteurs sur votre position actuelle pour lancer une analyse radar.";
+                    DOMElements.mainMessage.classList.remove('text-red-400', 'text-yellow-400');
+                    if(scanInterval) clearInterval(scanInterval);
+                    break;
+                case uiState.SCANNING:
+                    DOMElements.scanButton.disabled = true;
+                    DOMElements.scanButton.textContent = "SCAN EN COURS...";
+                    DOMElements.scanIndicator.classList.remove('hidden');
+                    DOMElements.scanIndicator.style.display = 'flex';
+                    startScanAnimation();
+                    break;
+                case uiState.SHOWING_RESULTS:
+                    if(scanInterval) clearInterval(scanInterval);
+                    DOMElements.scanIndicator.classList.add('hidden');
+                    DOMElements.scanButton.disabled = false;
+                    DOMElements.scanButton.textContent = "Nouveau Scan";
+                    showModal();
+                    break;
+            }
+        };
 
-        async function locationSuccess(position) {
+        // --- FONCTIONS PRINCIPALES ---
+        const handleScanClick = () => {
+            if (currentState !== uiState.IDLE) return;
+            if (!navigator.geolocation) {
+                displayError({ message: "La géolocalisation n'est pas supportée par votre navigateur." });
+                return;
+            }
+            setUIState(uiState.SCANNING);
+            runScanProcess();
+        };
+
+        const runScanProcess = async () => {
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
-                const data = await response.json();
-                const locationName = data.address.city || data.address.town || data.address.village || "votre zone";
-                startScan(locationName);
+                const position = await getPositionWithFallback();
+                const nearbyVortexes = analyzeVortexes(position);
+                displayResults(nearbyVortexes);
             } catch (error) {
-                console.error("Erreur de géocodage:", error);
-                startScan();
+                displayError(error);
             }
-        }
+        };
 
-        function locationError(error) {
-            console.warn(`ERREUR GÉO (${error.code}): ${error.message}`);
-            startScan();
-        }
-
-        function startScan(locationName = null) {
-            scanButton.textContent = "ANALYSE EN COURS...";
-            let statusIndex = 0;
-            const statusInterval = setInterval(() => {
-                statusIndex++;
-                if (statusIndex < statusMessages.length) {
-                    scanStatus.textContent = statusMessages[statusIndex];
-                } else {
-                    clearInterval(statusInterval);
-                }
-            }, 1500);
-            setTimeout(() => displayResults(locationName), statusMessages.length * 1500);
-        }
-
-        function angleToDirection(angle) {
-            const directions = ['Nord', 'Nord-Est', 'Est', 'Sud-Est', 'Sud', 'Sud-Ouest', 'Ouest', 'Nord-Ouest'];
-            return directions[Math.round(angle / 45) % 8];
-        }
-
-        function typeWriter(element, text, speed = 50) {
-            element.innerHTML = "";
-            let i = 0;
-            function type() {
-                if (i < text.length) {
-                    element.innerHTML += text.charAt(i);
-                    i++;
-                    setTimeout(type, speed);
-                }
-            }
-            type();
-        }
-
-        function displayResults(locationName = null) {
-            const isVortexDetected = Math.random() > 0.25;
-            let resultString;
-            
-            if (isVortexDetected) {
-                const vortex = vortexTypes[Math.floor(Math.random() * vortexTypes.length)];
-                const intensity = vortex.intensity[Math.floor(Math.random() * vortex.intensity.length)];
-                const distance = Math.floor(Math.random() * 45) + 5;
-                const angle = Math.floor(Math.random() * 360);
-                const direction = angleToDirection(angle);
-                const locationString = locationName ? `à ${locationName}` : "dans votre zone";
-
-                resultString = `Vortex ${vortex.type} d'intensité ${intensity} localisé ${locationString}.`;
+        // ** NOUVEAU : Logique de géolocalisation avec fallback **
+        const getPositionWithFallback = () => {
+            return new Promise(async (resolve, reject) => {
+                updateScanStatus("Demande d'autorisation...", 'text-gray-300');
                 
-                compassNeedle.style.transform = `translateX(-50%) rotate(${angle}deg)`;
-                directionText.textContent = `Position : ${direction} | ~${distance}m`;
-                compassContainer.classList.remove('hidden');
+                // Tentative 1: Haute précision
+                try {
+                    updateScanStatus("Recherche d'un signal GPS de haute précision...", 'text-yellow-400');
+                    const position = await new Promise((res, rej) => {
+                        navigator.geolocation.getCurrentPosition(res, rej, {
+                            enableHighAccuracy: true,
+                            timeout: CONFIG.GEOLOCATION_TIMEOUT_MS,
+                            maximumAge: 0
+                        });
+                    });
+                    resolve(position);
+                } catch (err) {
+                    // Si la haute précision échoue (surtout par timeout)
+                    if (err.code === 3) { // TIMEOUT
+                        updateScanStatus("Signal de haute précision non trouvé. Tentative en mode standard...", 'text-yellow-400');
+                        // Tentative 2: Précision standard (fallback)
+                        try {
+                            const position = await new Promise((res, rej) => {
+                                navigator.geolocation.getCurrentPosition(res, rej, {
+                                    enableHighAccuracy: false, // Fallback
+                                    timeout: CONFIG.GEOLOCATION_TIMEOUT_MS,
+                                    maximumAge: 60000
+                                });
+                            });
+                            resolve(position);
+                        } catch (fallbackErr) {
+                            reject(fallbackErr); // Si le fallback échoue aussi
+                        }
+                    } else {
+                        reject(err); // Pour les autres erreurs (ex: PERMISSION_DENIED)
+                    }
+                }
+            });
+        };
+
+        const analyzeVortexes = (position) => {
+            const { latitude: userLat, longitude: userLon } = position.coords;
+            return VORTEX_LOCATIONS
+                .map(vortex => ({...vortex, distance: getDistance(userLat, userLon, vortex.lat, vortex.lon), bearing: getBearing(userLat, userLon, vortex.lat, vortex.lon)}))
+                .filter(vortex => vortex.distance <= CONFIG.MAX_RADAR_RANGE_KM)
+                .sort((a, b) => a.distance - b.distance);
+        };
+
+        // --- GESTION DE L'AFFICHAGE ---
+        const displayResults = (nearbyVortexes) => {
+            setupModal("Résultat de l'analyse Radar", false);
+            DOMElements.radarContainer.style.display = 'block';
+            DOMElements.vortexList.style.display = 'block';
+
+            if (nearbyVortexes.length > 0) {
+                const resultMessage = `${nearbyVortexes.length} vortex détecté(s) à proximité.`;
+                typeWriter(DOMElements.resultText, resultMessage);
+                DOMElements.vortexList.innerHTML = nearbyVortexes.map(v => `<p class="text-cyan-200"><span class="font-bold text-white">${v.name}:</span> ${v.type} (${v.intensity}) à ${v.distance.toFixed(0)} km</p>`).join('');
+                drawRadar(nearbyVortexes);
+                announce(`Analyse terminée. ${resultMessage}`);
             } else {
-                resultString = stableResults[Math.floor(Math.random() * stableResults.length)];
-                compassContainer.classList.add('hidden');
+                const noResultMessage = "Aucun vortex significatif détecté dans la portée du radar.";
+                typeWriter(DOMElements.resultText, noResultMessage);
+                DOMElements.radarContainer.style.display = 'none';
+                DOMElements.vortexList.innerHTML = '';
+                announce(`Analyse terminée. ${noResultMessage}`);
             }
-            
-            scanIndicator.style.display = 'none';
-            typeWriter(resultText, resultString);
-            
-            // Afficher la modale avec animation
-            resultModal.classList.remove('hidden');
-            setTimeout(() => {
-                modalContent.classList.remove('scale-95', 'opacity-0');
-            }, 10);
+            setUIState(uiState.SHOWING_RESULTS);
+        };
 
-
-            scanButton.disabled = false;
-            scanButton.textContent = "Lancer un nouveau Scan";
-        }
+        const displayError = (error) => {
+            const { title, message } = formatGeoError(error);
+            setupModal(title, true);
+            DOMElements.resultText.textContent = message;
+            DOMElements.radarContainer.style.display = 'none';
+            DOMElements.vortexList.style.display = 'none';
+            announce(`Erreur: ${message}`);
+            setUIState(uiState.SHOWING_RESULTS);
+        };
         
-        function closeModal() {
-            modalContent.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                resultModal.classList.add('hidden');
-            }, 300); // Durée de la transition
-        }
+        const setupModal = (title, isError) => {
+            DOMElements.modalTitle.textContent = title;
+            DOMElements.modalTitle.classList.toggle('text-red-400', isError);
+            DOMElements.resultText.classList.toggle('text-red-400', isError);
+        };
 
-        closeModalButton.addEventListener('click', closeModal);
-        resultModal.addEventListener('click', (event) => {
-            // Fermer si on clique sur le fond de la modale
-            if (event.target === resultModal) {
-                closeModal();
+        const showModal = () => {
+            DOMElements.resultModal.classList.remove('hidden');
+            setTimeout(() => { DOMElements.modalContent.classList.remove('scale-95', 'opacity-0'); DOMElements.closeModalButton.focus(); }, 10);
+        };
+
+        const closeModal = () => {
+            DOMElements.modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { DOMElements.resultModal.classList.add('hidden'); setUIState(uiState.IDLE); DOMElements.scanButton.focus(); }, 300);
+        };
+
+        const startScanAnimation = () => {
+            const messages = ["ANALYSE DES FRÉQUENCES...", "TRIANGULATION RADAR...", "INTERPRÉTATION..."];
+            let index = 0;
+            const update = () => {
+                DOMElements.scanStatus.textContent = messages[index];
+                announce(messages[index]);
+                index = (index + 1) % messages.length;
+            };
+            scanInterval = setInterval(update, CONFIG.SCAN_STEP_DELAY_MS);
+        };
+
+        const updateScanStatus = (message, colorClass = 'text-gray-300') => {
+             DOMElements.mainMessage.textContent = message;
+             DOMElements.mainMessage.className = `mb-8 transition-colors duration-300 min-h-[48px] ${colorClass}`;
+             announce(message);
+        };
+
+        const drawRadar = (vortexes) => {
+            const { width, height } = DOMElements.radarCanvas;
+            const center = { x: width / 2, y: height / 2 };
+            const maxRadius = width / 2 * 0.9;
+            radarCtx.clearRect(0, 0, width, height);
+            radarCtx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+            radarCtx.lineWidth = 1;
+            [0.25, 0.5, 0.75, 1].forEach(r => { radarCtx.beginPath(); radarCtx.arc(center.x, center.y, maxRadius * r, 0, 2 * Math.PI); radarCtx.stroke(); });
+            radarCtx.fillStyle = 'rgba(56, 189, 248, 0.8)';
+            radarCtx.beginPath(); radarCtx.arc(center.x, center.y, 4, 0, 2 * Math.PI); radarCtx.fill();
+            vortexes.forEach(vortex => {
+                const distanceRatio = vortex.distance / CONFIG.MAX_RADAR_RANGE_KM;
+                const angleRad = (vortex.bearing - 90) * (Math.PI / 180);
+                const x = center.x + Math.cos(angleRad) * distanceRatio * maxRadius;
+                const y = center.y + Math.sin(angleRad) * distanceRatio * maxRadius;
+                radarCtx.save();
+                radarCtx.fillStyle = `rgba(236, 72, 153, ${Math.random() * 0.5 + 0.5})`;
+                radarCtx.shadowColor = '#ec4899'; radarCtx.shadowBlur = 10;
+                radarCtx.beginPath(); radarCtx.arc(x, y, 5, 0, 2 * Math.PI); radarCtx.fill();
+                radarCtx.restore();
+            });
+        };
+        
+        // --- FONCTIONS UTILITAIRES ---
+        const formatGeoError = (error) => {
+            let title = "Erreur de Géolocalisation";
+            let message = error.message || "Une erreur inconnue est survenue.";
+            if (error.code) {
+                switch (error.code) {
+                    case 1: message = "L'accès à votre position a été refusé. Veuillez l'autoriser dans les paramètres de votre navigateur."; break;
+                    case 2: message = "Votre position n'a pas pu être déterminée. Vérifiez votre connexion ou vos paramètres GPS."; break;
+                    case 3: message = "La demande de géolocalisation a expiré, même en précision standard. Veuillez vérifier votre connexion et réessayer."; break;
+                }
             }
-        });
+            return { title, message };
+        };
+
+        const typeWriter = (element, text, speed = 40) => { element.innerHTML = ""; let i = 0; const type = () => { if (i < text.length) { element.innerHTML += text.charAt(i); i++; setTimeout(type, speed); } }; type(); };
+        const announce = (message) => { DOMElements.announcer.textContent = message; };
+        const getDistance = (lat1, lon1, lat2, lon2) => { const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2; return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))); };
+        const getBearing = (lat1, lon1, lat2, lon2) => { const toRad = Math.PI / 180; const y = Math.sin((lon2 - lon1) * toRad) * Math.cos(lat2 * toRad); const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) - Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos((lon2 - lon1) * toRad); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; };
+
+        // --- INITIALISATION ---
+        DOMElements.scanButton.addEventListener('click', handleScanClick);
+        DOMElements.closeModalButton.addEventListener('click', closeModal);
+        DOMElements.resultModal.addEventListener('click', (event) => { if (event.target === DOMElements.resultModal) closeModal(); });
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && currentState === uiState.SHOWING_RESULTS) closeModal(); });
+        
+        setUIState(uiState.IDLE);
+        announce("Détecteur de vortex prêt.");
+    });
     </script>
 </body>
 </html>
