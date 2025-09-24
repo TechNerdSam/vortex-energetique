@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instrument d'Analyse de Champ Subtil v8.0</title>
+    <title>Instrument d'Analyse de Champ Subtil v8.1</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -238,7 +238,7 @@
                 if (kIndex > 6) kIndexDesc = "Orage";
 
                 const localVortexes = [];
-                const count = SeededPRNG.nextInt(2, CONFIG.MAX_LOCAL_Vortexes);
+                const count = SeededPRNG.nextInt(2, CONFIG.MAX_LOCAL_VORTEXES);
 
                 for (let i = 0; i < count; i++) {
                     const angle = SeededPRNG.nextFloat() * 2 * Math.PI;
@@ -278,9 +278,30 @@
         const setUIState = (newState) => {
             currentState = newState;
             switch (newState) {
-                case uiState.IDLE: DOMElements.scanButton.disabled = false; DOMElements.scanButton.textContent = "Lancer l'Analyse"; DOMElements.scanIndicator.classList.add('hidden'); DOMElements.mainMessage.textContent = "Le système est prêt. Calibrez les capteurs sur votre position actuelle pour une micro-analyse."; DOMElements.mainMessage.classList.remove('text-red-400', 'text-yellow-400'); if(scanInterval) clearInterval(scanInterval); break;
-                case uiState.SCANNING: DOMElements.scanButton.disabled = true; DOMElements.scanButton.textContent = "ANALYSE..."; DOMElements.scanIndicator.classList.remove('hidden'); DOMElements.scanIndicator.style.display = 'flex'; startScanAnimation(); break;
-                case uiState.SHOWING_RESULTS: if(scanInterval) clearInterval(scanInterval); DOMElements.scanIndicator.classList.add('hidden'); DOMElements.scanButton.disabled = false; DOMElements.scanButton.textContent = "Nouvelle Analyse"; showModal(); break;
+                case uiState.IDLE: 
+                    DOMElements.scanButton.disabled = false; 
+                    DOMElements.scanButton.textContent = "Lancer l'Analyse"; 
+                    DOMElements.scanIndicator.classList.add('hidden'); 
+                    DOMElements.mainMessage.textContent = "Le système est prêt. Calibrez les capteurs sur votre position actuelle pour une micro-analyse."; 
+                    DOMElements.mainMessage.classList.remove('text-red-400', 'text-yellow-400'); 
+                    if(scanInterval) clearInterval(scanInterval); 
+                    break;
+                case uiState.SCANNING: 
+                    DOMElements.scanButton.disabled = true; 
+                    DOMElements.scanButton.textContent = "ANALYSE..."; 
+                    DOMElements.scanIndicator.classList.remove('hidden'); 
+                    DOMElements.scanIndicator.style.display = 'flex'; 
+                    startScanAnimation(); 
+                    break;
+                case uiState.SHOWING_RESULTS: 
+                    if(scanInterval) clearInterval(scanInterval); 
+                    DOMElements.scanIndicator.classList.add('hidden');
+                    DOMElements.mainMessage.textContent = "Le système est prêt. Calibrez les capteurs sur votre position actuelle pour une micro-analyse.";
+                    DOMElements.mainMessage.classList.remove('text-red-400', 'text-yellow-400');
+                    DOMElements.scanButton.disabled = false; 
+                    DOMElements.scanButton.textContent = "Nouvelle Analyse"; 
+                    showModal(); 
+                    break;
             }
         };
 
