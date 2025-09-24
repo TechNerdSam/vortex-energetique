@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détecteur de Vortex Énergétiques v5.0 - Hyper-Localisation</title>
+    <title>Détecteur de Vortex Énergétiques v6.0 - Micro-Analyse Locale</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -97,7 +97,6 @@
             white-space: nowrap;
             border-width: 0;
         }
-        /* Custom scrollbar for vortex list */
         #vortexList::-webkit-scrollbar {
             width: 8px;
         }
@@ -128,12 +127,12 @@
                 </svg>
             </div>
             <h1 class="text-4xl md:text-5xl font-bold tracking-wider text-white uppercase" style="text-shadow: 0 0 10px #38bdf8;">Détecteur de Vortex</h1>
-            <p class="text-lg text-gray-400 mt-2">Analyse des perturbations énergétiques par géolocalisation</p>
+            <p class="text-lg text-gray-400 mt-2">Micro-analyse des perturbations énergétiques locales</p>
         </header>
 
         <div class="panel-glass rounded-2xl p-6 md:p-10">
             <p id="mainMessage" class="mb-8 text-gray-300 transition-colors duration-300 min-h-[48px]">
-                Le système est prêt. Calibrez les capteurs sur votre position actuelle pour lancer une analyse radar.
+                Le système est prêt. Calibrez les capteurs sur votre position actuelle pour une micro-analyse radar.
             </p>
             <button id="scanButton" class="scan-button w-full md:w-auto px-12 py-4 text-xl font-bold text-gray-900 uppercase rounded-lg transition-all duration-300 ease-in-out transform focus:outline-none">
                 Lancer le Scan
@@ -148,16 +147,16 @@
         </section>
 
         <div id="resultModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-            <div id="modalContent" class="panel-glass w-full max-w-2xl rounded-2xl p-6 md:p-8 text-center relative transform transition-all duration-300 scale-95 opacity-0">
+            <div id="modalContent" class="panel-glass w-full max-w-3xl rounded-2xl p-6 md:p-8 text-center relative transform transition-all duration-300 scale-95 opacity-0">
                 <button id="closeModalButton" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors" aria-label="Fermer la fenêtre">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
-                <h2 id="modalTitle" class="text-2xl font-orbitron font-bold text-cyan-300 mb-4">Résultat de l'analyse Radar</h2>
+                <h2 id="modalTitle" class="text-2xl font-orbitron font-bold text-cyan-300 mb-4">Résultat de la Micro-Analyse</h2>
                 
                 <div id="modalBody" class="flex flex-col md:flex-row gap-6 items-center">
-                    <div class="w-full md:w-1/2">
+                    <div class="w-full md:w-1/3">
                         <p id="resultText" class="text-lg text-white mb-4 max-w-lg min-h-[28px]"></p>
                         <div id="radarContainer" class="hidden w-full aspect-square max-w-[250px] mx-auto relative">
                             <canvas id="radarCanvas" width="250" height="250"></canvas>
@@ -176,7 +175,7 @@
                             </div>
                         </div>
                     </div>
-                    <div id="vortexList" class="text-left text-sm w-full md:w-1/2 max-h-64 overflow-y-auto pr-2"></div>
+                    <div id="vortexList" class="text-left text-sm w-full md:w-2/3 max-h-72 overflow-y-auto pr-2"></div>
                 </div>
             </div>
         </div>
@@ -190,9 +189,9 @@
     document.addEventListener('DOMContentLoaded', () => {
         // --- CONFIGURATION ---
         const CONFIG = {
-            MAX_RADAR_RANGE_KM: 5000,
-            LOCAL_VORTEX_RADIUS_KM: 50,
-            MAX_LOCAL_VORTEXES: 5,
+            LOCAL_VORTEX_MIN_RADIUS_M: 10,
+            LOCAL_VORTEX_MAX_RADIUS_M: 50,
+            MAX_LOCAL_VORTEXES: 7,
             SCAN_STEP_DELAY_MS: 1200,
             GEOLOCATION_TIMEOUT_MS: 10000,
         };
@@ -203,41 +202,36 @@
         };
         const radarCtx = DOMElements.radarCanvas.getContext('2d');
 
-        // --- DONNÉES STATIQUES (SITES MAJEURS) ---
-        const MAJOR_VORTEX_LOCATIONS = [
-            { name: "Forêt de Brocéliande", type: "tellurique", intensity: "puissant", lat: 48.005, lon: -2.29 }, { name: "Mont Saint-Michel", type: "de convergence", intensity: "forte", lat: 48.636, lon: -1.511 }, { name: "Alignements de Carnac", type: "résiduel", intensity: "modérée", lat: 47.585, lon: -3.08 }, { name: "Cathédrale de Chartres", type: "spirituel", intensity: "forte", lat: 48.447, lon: 1.488 }, { name: "Rennes-le-Château", type: "de turbulence", intensity: "instable", lat: 42.927, lon: 2.263 }, { name: "Grotte de Lourdes", type: "curatif", intensity: "très forte", lat: 43.097, lon: -0.058 }, { name: "Mont Bugarach", type: "énigmatique", intensity: "variable", lat: 42.871, lon: 2.349 }, { name: "Stonehenge, UK", type: "ancestral", intensity: "puissant", lat: 51.178, lon: -1.826 }, { name: "Pyramide de Gizeh, Égypte", type: "cosmique", intensity: "immense", lat: 29.979, lon: 31.134 }, { name: "Sedona, USA", type: "d'amplification", intensity: "très forte", lat: 34.869, lon: -111.761 }, { name: "Mont Shasta, USA", type: "interdimensionnel", intensity: "mystique", lat: 41.409, lon: -122.195 }, { name: "Lac Titicaca, Bolivie/Pérou", type: "spirituel", intensity: "élevée", lat: -16.5, lon: -69.0 }, { name: "Mont Kailash, Tibet", type: "divin", intensity: "transcendant", lat: 31.066, lon: 81.312 }, { name: "Uluru, Australie", type: "primordial", intensity: "brute", lat: -25.344, lon: 131.036 }, { name: "Mont Choungui, Mayotte", type: "volcanique", intensity: "émergent", lat: -12.960, lon: 45.138 }, { name: "Teotihuacan, Mexique", type: "cosmologique", intensity: "puissant", lat: 19.692, lon: -98.843 }
-        ];
-
         // --- MOTEUR DE GÉNÉRATION DE DONNÉES ---
         const DataGenerator = {
             pick: (arr) => arr[Math.floor(Math.random() * arr.length)],
             randomInt: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
             randomFloat: (min, max) => Math.random() * (max - min) + min,
             
-            // ** NOUVEAU : Générateur de vortex locaux détaillés **
             generateLocalVortexes: (position) => {
                 const localVortexes = [];
                 const count = DataGenerator.randomInt(2, CONFIG.MAX_LOCAL_VORTEXES);
                 const { latitude: lat, longitude: lon } = position.coords;
 
                 for (let i = 0; i < count; i++) {
-                    // Création de coordonnées aléatoires dans un rayon défini
                     const angle = DataGenerator.randomFloat(0, 2 * Math.PI);
-                    const distance = DataGenerator.randomFloat(0, CONFIG.LOCAL_VORTEX_RADIUS_KM);
-                    const latOffset = (distance / 111.32) * Math.sin(angle);
-                    const lonOffset = (distance / (111.32 * Math.cos(lat * Math.PI / 180))) * Math.cos(angle);
+                    const distanceInMeters = DataGenerator.randomFloat(CONFIG.LOCAL_VORTEX_MIN_RADIUS_M, CONFIG.LOCAL_VORTEX_MAX_RADIUS_M);
+                    const latOffset = (distanceInMeters / 111320) * Math.sin(angle);
+                    const lonOffset = (distanceInMeters / (111320 * Math.cos(lat * Math.PI / 180))) * Math.cos(angle);
                     
                     localVortexes.push({
-                        name: `Anomalie locale ${String.fromCharCode(65 + i)}${DataGenerator.randomInt(10,99)}`,
+                        name: `Signature énergétique #${DataGenerator.randomInt(1000, 9999)}`,
                         lat: lat + latOffset,
                         lon: lon + lonOffset,
-                        type: DataGenerator.pick(["tellurique", "éthérique", "magnétique", "résiduel"]),
-                        intensity: DataGenerator.pick(["faible", "modérée", "instable"]),
-                        // Ajout des détails
-                        frequency: `${DataGenerator.randomFloat(1.5, 25.5).toFixed(2)} THz`,
-                        signature: DataGenerator.pick(["Harmonique", "Chaotique", "Cyclique", "Neutre"]),
-                        stability: `${DataGenerator.randomInt(75, 98)}%`,
-                        class: DataGenerator.pick(["I", "II", "III", "IV"]),
+                        type: DataGenerator.pick(["quantique", "subspatial", "gravitique", "temporel"]),
+                        intensity: DataGenerator.pick(["très faible", "faible", "fluctuante"]),
+                        frequency: `${DataGenerator.randomFloat(1.5, 95.5).toFixed(2)} GHz`,
+                        signature: DataGenerator.pick(["Cohérente", "Déphasée", "Interférente", "Binaire"]),
+                        stability: `${DataGenerator.randomInt(15, 70)}%`,
+                        class: `Classe ${DataGenerator.pick(["Epsilon", "Gamma", "Delta"])}`,
+                        amplitude: `${DataGenerator.randomFloat(5, 50).toFixed(2)} µT`,
+                        density: `${DataGenerator.randomFloat(0.1, 1.9).toFixed(3)} eV/cm³`,
+                        phaseShift: `${DataGenerator.randomFloat(-0.5, 0.5).toFixed(4)} ps`,
                         isLocal: true
                     });
                 }
@@ -253,7 +247,7 @@
         const setUIState = (newState) => {
             currentState = newState;
             switch (newState) {
-                case uiState.IDLE: DOMElements.scanButton.disabled = false; DOMElements.scanButton.textContent = "Lancer le Scan"; DOMElements.scanIndicator.classList.add('hidden'); DOMElements.mainMessage.textContent = "Le système est prêt. Calibrez les capteurs sur votre position actuelle pour lancer une analyse radar."; DOMElements.mainMessage.classList.remove('text-red-400', 'text-yellow-400'); if(scanInterval) clearInterval(scanInterval); break;
+                case uiState.IDLE: DOMElements.scanButton.disabled = false; DOMElements.scanButton.textContent = "Lancer le Scan"; DOMElements.scanIndicator.classList.add('hidden'); DOMElements.mainMessage.textContent = "Le système est prêt. Calibrez les capteurs sur votre position actuelle pour une micro-analyse radar."; DOMElements.mainMessage.classList.remove('text-red-400', 'text-yellow-400'); if(scanInterval) clearInterval(scanInterval); break;
                 case uiState.SCANNING: DOMElements.scanButton.disabled = true; DOMElements.scanButton.textContent = "SCAN EN COURS..."; DOMElements.scanIndicator.classList.remove('hidden'); DOMElements.scanIndicator.style.display = 'flex'; startScanAnimation(); break;
                 case uiState.SHOWING_RESULTS: if(scanInterval) clearInterval(scanInterval); DOMElements.scanIndicator.classList.add('hidden'); DOMElements.scanButton.disabled = false; DOMElements.scanButton.textContent = "Nouveau Scan"; showModal(); break;
             }
@@ -298,41 +292,43 @@
 
         const analyzeVortexes = (position) => {
             const localVortexes = DataGenerator.generateLocalVortexes(position);
-            const allVortexes = [...MAJOR_VORTEX_LOCATIONS, ...localVortexes];
             const { latitude: userLat, longitude: userLon } = position.coords;
-            
-            return allVortexes
-                .map(vortex => ({...vortex, distance: getDistance(userLat, userLon, vortex.lat, vortex.lon), bearing: getBearing(userLat, userLon, vortex.lat, vortex.lon)}))
-                .filter(vortex => vortex.distance <= (vortex.isLocal ? CONFIG.LOCAL_VORTEX_RADIUS_KM : CONFIG.MAX_RADAR_RANGE_KM))
+            return localVortexes
+                .map(vortex => ({...vortex, distance: getDistance(userLat, userLon, vortex.lat, vortex.lon) * 1000, bearing: getBearing(userLat, userLon, vortex.lat, vortex.lon)}))
                 .sort((a, b) => a.distance - b.distance);
         };
 
         // --- GESTION DE L'AFFICHAGE ---
         const displayResults = (nearbyVortexes) => {
-            setupModal("Résultat de l'analyse Radar", false);
+            setupModal("Résultat de la Micro-Analyse", false);
             DOMElements.radarContainer.style.display = 'block';
             DOMElements.vortexList.style.display = 'block';
 
             if (nearbyVortexes.length > 0) {
-                const resultMessage = `${nearbyVortexes.length} vortex détecté(s) à proximité.`;
+                const resultMessage = `${nearbyVortexes.length} signatures énergétiques détectées.`;
                 typeWriter(DOMElements.resultText, resultMessage);
                 
-                // ** NOUVEAU : Affichage détaillé **
                 DOMElements.vortexList.innerHTML = nearbyVortexes.map(v => `
-                    <div class="panel-glass rounded-lg p-3 mb-2 border-l-4 ${v.isLocal ? 'border-pink-500' : 'border-cyan-500'}">
+                    <div class="panel-glass rounded-lg p-3 mb-2 border-l-4 border-pink-500">
                         <h3 class="font-bold text-white font-orbitron">${v.name}</h3>
-                        <p><span class="font-semibold text-gray-400">Position:</span> ${v.distance.toFixed(1)} km / ${v.bearing.toFixed(0)}°</p>
-                        <p><span class="font-semibold text-gray-400">Type:</span> ${v.type} (${v.intensity})</p>
-                        ${v.isLocal ? `
-                        <p><span class="font-semibold text-gray-400">Classe:</span> ${v.class} / <span class="font-semibold text-gray-400">Stabilité:</span> ${v.stability}</p>
-                        <p><span class="font-semibold text-gray-400">Fréq.:</span> ${v.frequency} / <span class="font-semibold text-gray-400">Signature:</span> ${v.signature}</p>
-                        ` : ''}
+                        <p><span class="font-semibold text-gray-400">Position:</span> ${v.distance.toFixed(1)} m / ${v.bearing.toFixed(0)}°</p>
+                        <div class="grid grid-cols-2 gap-x-3 text-xs mt-2">
+                            <p><span class="font-semibold text-gray-400">Type:</span> ${v.type}</p>
+                            <p><span class="font-semibold text-gray-400">Intensité:</span> ${v.intensity}</p>
+                            <p><span class="font-semibold text-gray-400">Stabilité:</span> ${v.stability}</p>
+                            <p><span class="font-semibold text-gray-400">Classe:</span> ${v.class}</p>
+                            <p><span class="font-semibold text-gray-400">Fréq.:</span> ${v.frequency}</p>
+                            <p><span class="font-semibold text-gray-400">Signature:</span> ${v.signature}</p>
+                            <p><span class="font-semibold text-gray-400">Amplitude:</span> ${v.amplitude}</p>
+                            <p><span class="font-semibold text-gray-400">Densité:</span> ${v.density}</p>
+                            <p class="col-span-2"><span class="font-semibold text-gray-400">Déphasage Temp.:</span> ${v.phaseShift}</p>
+                        </div>
                     </div>
                 `).join('');
                 drawRadar(nearbyVortexes);
                 announce(`Analyse terminée. ${resultMessage}`);
             } else {
-                const noResultMessage = "Aucun vortex significatif détecté dans la portée du radar.";
+                const noResultMessage = "Aucune anomalie significative détectée dans la portée du scanner.";
                 typeWriter(DOMElements.resultText, noResultMessage);
                 DOMElements.radarContainer.style.display = 'none';
                 DOMElements.vortexList.innerHTML = '';
@@ -341,16 +337,7 @@
             setUIState(uiState.SHOWING_RESULTS);
         };
         
-        const displayError = (error) => {
-            const { title, message } = formatGeoError(error);
-            setupModal(title, true);
-            DOMElements.resultText.textContent = message;
-            DOMElements.radarContainer.style.display = 'none';
-            DOMElements.vortexList.style.display = 'none';
-            announce(`Erreur: ${message}`);
-            setUIState(uiState.SHOWING_RESULTS);
-        };
-
+        const displayError = (error) => { const { title, message } = formatGeoError(error); setupModal(title, true); DOMElements.resultText.textContent = message; DOMElements.radarContainer.style.display = 'none'; DOMElements.vortexList.style.display = 'none'; announce(`Erreur: ${message}`); setUIState(uiState.SHOWING_RESULTS); };
         const setupModal = (title, isError) => { DOMElements.modalTitle.textContent = title; DOMElements.modalTitle.classList.toggle('text-red-400', isError); DOMElements.resultText.classList.toggle('text-red-400', isError); };
         const showModal = () => { DOMElements.resultModal.classList.remove('hidden'); setTimeout(() => { DOMElements.modalContent.classList.remove('scale-95', 'opacity-0'); DOMElements.closeModalButton.focus(); }, 10); };
         const closeModal = () => { DOMElements.modalContent.classList.add('scale-95', 'opacity-0'); setTimeout(() => { DOMElements.resultModal.classList.add('hidden'); setUIState(uiState.IDLE); DOMElements.scanButton.focus(); }, 300); };
@@ -368,14 +355,14 @@
             radarCtx.fillStyle = 'rgba(56, 189, 248, 0.8)';
             radarCtx.beginPath(); radarCtx.arc(center.x, center.y, 4, 0, 2 * Math.PI); radarCtx.fill();
             vortexes.forEach(vortex => {
-                const range = vortex.isLocal ? CONFIG.LOCAL_VORTEX_RADIUS_KM : CONFIG.MAX_RADAR_RANGE_KM;
+                const range = CONFIG.LOCAL_VORTEX_MAX_RADIUS_M;
                 const distanceRatio = Math.min(vortex.distance / range, 1);
                 const angleRad = (vortex.bearing - 90) * (Math.PI / 180);
                 const x = center.x + Math.cos(angleRad) * distanceRatio * maxRadius;
                 const y = center.y + Math.sin(angleRad) * distanceRatio * maxRadius;
                 radarCtx.save();
-                radarCtx.fillStyle = vortex.isLocal ? `rgba(236, 72, 153, ${Math.random() * 0.5 + 0.5})` : `rgba(56, 189, 248, ${Math.random() * 0.5 + 0.5})`;
-                radarCtx.shadowColor = vortex.isLocal ? '#ec4899' : '#38bdf8';
+                radarCtx.fillStyle = `rgba(236, 72, 153, ${Math.random() * 0.5 + 0.5})`;
+                radarCtx.shadowColor = '#ec4899';
                 radarCtx.shadowBlur = 10;
                 radarCtx.beginPath();
                 radarCtx.arc(x, y, 5, 0, 2 * Math.PI);
