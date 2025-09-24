@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détecteur de Vortex Énergétiques v6.0 - Micro-Analyse Locale</title>
+    <title>Détecteur de Vortex Énergétiques v7.0 - Analyse de Polarité</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -219,6 +219,11 @@
                     const latOffset = (distanceInMeters / 111320) * Math.sin(angle);
                     const lonOffset = (distanceInMeters / (111320 * Math.cos(lat * Math.PI / 180))) * Math.cos(angle);
                     
+                    const polarity = DataGenerator.pick(["Positif", "Négatif", "Neutre"]);
+                    let polarityDescription = "Signature équilibrée, sans influence notable sur l'environnement local.";
+                    if (polarity === "Positif") polarityDescription = "Influence harmonique, favorisant la stabilité et le bien-être.";
+                    if (polarity === "Négatif") polarityDescription = "Influence disruptive, source d'instabilité et de turbulence énergétique.";
+
                     localVortexes.push({
                         name: `Signature énergétique #${DataGenerator.randomInt(1000, 9999)}`,
                         lat: lat + latOffset,
@@ -232,6 +237,8 @@
                         amplitude: `${DataGenerator.randomFloat(5, 50).toFixed(2)} µT`,
                         density: `${DataGenerator.randomFloat(0.1, 1.9).toFixed(3)} eV/cm³`,
                         phaseShift: `${DataGenerator.randomFloat(-0.5, 0.5).toFixed(4)} ps`,
+                        polarity: polarity,
+                        polarityDescription: polarityDescription,
                         isLocal: true
                     });
                 }
@@ -308,11 +315,25 @@
                 const resultMessage = `${nearbyVortexes.length} signatures énergétiques détectées.`;
                 typeWriter(DOMElements.resultText, resultMessage);
                 
-                DOMElements.vortexList.innerHTML = nearbyVortexes.map(v => `
-                    <div class="panel-glass rounded-lg p-3 mb-2 border-l-4 border-pink-500">
+                DOMElements.vortexList.innerHTML = nearbyVortexes.map(v => {
+                    let borderColor = 'border-gray-500';
+                    let textColor = 'text-gray-300';
+                    if (v.polarity === 'Positif') {
+                        borderColor = 'border-cyan-500';
+                        textColor = 'text-cyan-300';
+                    }
+                    if (v.polarity === 'Négatif') {
+                        borderColor = 'border-red-500';
+                        textColor = 'text-red-400';
+                    }
+
+                    return `
+                    <div class="panel-glass rounded-lg p-3 mb-2 border-l-4 ${borderColor}">
                         <h3 class="font-bold text-white font-orbitron">${v.name}</h3>
                         <p><span class="font-semibold text-gray-400">Position:</span> ${v.distance.toFixed(1)} m / ${v.bearing.toFixed(0)}°</p>
-                        <div class="grid grid-cols-2 gap-x-3 text-xs mt-2">
+                        <p class="mt-1 ${textColor}"><span class="font-semibold text-gray-400">Polarité:</span> ${v.polarity}</p>
+                        <p class="text-xs text-gray-400 italic mt-1">"${v.polarityDescription}"</p>
+                        <div class="grid grid-cols-2 gap-x-3 text-xs mt-2 border-t border-gray-700 pt-2">
                             <p><span class="font-semibold text-gray-400">Type:</span> ${v.type}</p>
                             <p><span class="font-semibold text-gray-400">Intensité:</span> ${v.intensity}</p>
                             <p><span class="font-semibold text-gray-400">Stabilité:</span> ${v.stability}</p>
@@ -324,7 +345,8 @@
                             <p class="col-span-2"><span class="font-semibold text-gray-400">Déphasage Temp.:</span> ${v.phaseShift}</p>
                         </div>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
                 drawRadar(nearbyVortexes);
                 announce(`Analyse terminée. ${resultMessage}`);
             } else {
@@ -361,8 +383,16 @@
                 const x = center.x + Math.cos(angleRad) * distanceRatio * maxRadius;
                 const y = center.y + Math.sin(angleRad) * distanceRatio * maxRadius;
                 radarCtx.save();
-                radarCtx.fillStyle = `rgba(236, 72, 153, ${Math.random() * 0.5 + 0.5})`;
-                radarCtx.shadowColor = '#ec4899';
+                if (vortex.polarity === 'Positif') {
+                    radarCtx.fillStyle = `rgba(56, 189, 248, ${Math.random() * 0.5 + 0.5})`;
+                    radarCtx.shadowColor = '#38bdf8';
+                } else if (vortex.polarity === 'Négatif') {
+                    radarCtx.fillStyle = `rgba(244, 63, 94, ${Math.random() * 0.5 + 0.5})`;
+                    radarCtx.shadowColor = '#f43f5e';
+                } else {
+                    radarCtx.fillStyle = `rgba(107, 114, 128, ${Math.random() * 0.5 + 0.5})`;
+                    radarCtx.shadowColor = '#6b7280';
+                }
                 radarCtx.shadowBlur = 10;
                 radarCtx.beginPath();
                 radarCtx.arc(x, y, 5, 0, 2 * Math.PI);
