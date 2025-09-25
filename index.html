@@ -19,15 +19,29 @@
         .card-glow-neutral {
             box-shadow: 0 0 15px rgba(107, 114, 128, 0.3), 0 0 5px rgba(107, 114, 128, 0.5);
         }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="w-full max-w-3xl text-center">
+    <div class="w-full max-w-4xl text-center">
         <!-- En-tête et Avertissement Islamique -->
         <header class="mb-8">
             <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-500 mb-2">Analyseur de Lieux de Contemplation</h1>
-            <p class="text-gray-400 text-lg">Un outil de réflexion spirituelle en accord avec les principes de l'Islam.</p>
+            <p class="text-gray-400 text-lg">Un outil de réflexion spirituelle basé sur les données d'OpenStreetMap.</p>
         </header>
 
         <div class="bg-gray-800 border border-yellow-500 rounded-lg p-6 mb-8 text-left">
@@ -44,20 +58,21 @@
 
         <!-- Bouton de Contrôle -->
         <div class="mb-8">
-            <button id="analyzeBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-full transition-transform duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+            <button id="analyzeBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-full transition-transform duration-300 ease-in-out transform hover:scale-105 shadow-lg flex items-center justify-center mx-auto disabled:opacity-50 disabled:cursor-not-allowed">
                 Analyser les environs (5 km)
             </button>
         </div>
 
         <!-- Section des Résultats -->
-        <div id="status" class="text-gray-400 h-8"></div>
-        <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
+        <div id="status" class="text-gray-400 h-8 flex items-center justify-center"></div>
+        <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left mt-4">
             <!-- Les cartes de résultats seront insérées ici par JavaScript -->
         </div>
     </div>
 
     <footer class="text-center text-gray-500 mt-12">
         <p>&copy; 2024 - Outil de Réflexion Spirituelle. Louange à Allah, Seigneur des Mondes.</p>
+        <p class="text-xs">Données cartographiques &copy; contributeurs d'OpenStreetMap.</p>
     </footer>
 
     <script>
@@ -65,125 +80,179 @@
         const statusDiv = document.getElementById('status');
         const resultsDiv = document.getElementById('results');
 
-        // Contenu textuel conforme à l'Islam
         const interpretations = {
             positive: {
-                title: "Lieu d'Énergie Positive (Propice au Rappel)",
+                title: "Lieu Propice au Rappel",
                 icon: '🌙',
                 class: 'border-green-500 card-glow-positive',
                 description: "Interprétation Spirituelle (Bienfaits)",
-                details: "Ce type de lieu, souvent calme et harmonieux (parc, cours d'eau, lieu peu fréquenté), est propice à la contemplation de la beauté de la création d'Allah (SWT). Il peut aider à apaiser le cœur, à se concentrer pour la prière (Salat) et le rappel (Dhikr). Les bienfaits ne viennent pas du lieu, mais de la facilité qu'il offre pour se tourner vers le Créateur."
+                details: "Ce type de lieu est propice à la contemplation de la création d'Allah (SWT). Il peut aider à apaiser le cœur et à se concentrer pour la prière et le rappel. Les bienfaits viennent de la facilité qu'il offre pour se tourner vers le Créateur."
             },
             negative: {
-                title: "Lieu d'Énergie Négative (Source de Distraction)",
+                title: "Source de Distraction",
                 icon: '🔥',
                 class: 'border-red-500 card-glow-negative',
                 description: "Interprétation Spirituelle (Méfaits)",
-                details: "Un lieu bruyant, chaotique ou associé à des futilités (grand centre commercial, zone de divertissement excessif) peut être une source de distraction. Il peut éloigner l'esprit du rappel d'Allah et encourager la 'Dunya' (les biens de ce monde). Les méfaits ne sont pas une 'énergie' du lieu, mais le risque de négliger ses devoirs spirituels à cause de l'environnement."
+                details: "Un lieu associé à des futilités peut éloigner l'esprit du rappel d'Allah et encourager la 'Dunya' (les biens de ce monde). Le méfait est le risque de négliger ses devoirs spirituels à cause de l'environnement."
             },
             neutral: {
-                title: "Lieu d'Énergie Neutre (Environnement Quotidien)",
+                title: "Environnement Quotidien",
                 icon: '🏠',
                 class: 'border-gray-500 card-glow-neutral',
                 description: "Interprétation Spirituelle",
-                details: "Ceci représente un lieu de la vie quotidienne (zone résidentielle, bureau). Il n'a pas d'influence particulière, mais il offre une opportunité constante. C'est un rappel que chaque instant, même le plus banal, peut être transformé en acte d'adoration par l'intention (Niyyah) et le rappel constant d'Allah (SWT) dans nos activités journalières."
+                details: "Ce lieu offre une opportunité constante de transformer chaque instant en acte d'adoration par l'intention (Niyyah) et le rappel constant d'Allah (SWT) dans nos activités journalières."
             }
         };
 
+        const placeClassification = {
+            // Positif
+            'place_of_worship': { type: 'positive', label: 'Lieu de Culte' },
+            'park': { type: 'positive', label: 'Parc / Espace Vert' },
+            'nature_reserve': { type: 'positive', label: 'Réserve Naturelle' },
+            'cemetery': { type: 'positive', label: 'Cimetière (Lieu de méditation)' },
+            'library': { type: 'positive', label: 'Bibliothèque' },
+            // Négatif
+            'bar': { type: 'negative', label: 'Bar' },
+            'nightclub': { type: 'negative', label: 'Boîte de nuit' },
+            'casino': { type: 'negative', label: 'Casino' },
+            'mall': { type: 'negative', label: 'Centre Commercial' },
+        };
+
         analyzeBtn.addEventListener('click', () => {
-            statusDiv.textContent = "Demande de votre localisation...";
+            statusDiv.innerHTML = "";
             resultsDiv.innerHTML = '';
+            analyzeBtn.disabled = true;
+            statusDiv.innerHTML = '<div class="loader"></div><span>Demande de votre localisation...</span>';
             
             if (!navigator.geolocation) {
                 statusDiv.textContent = "La géolocalisation n'est pas supportée par votre navigateur.";
+                analyzeBtn.disabled = false;
                 return;
             }
 
             navigator.geolocation.getCurrentPosition(analyzeLocation, handleError);
         });
 
-        function analyzeLocation(position) {
-            statusDiv.textContent = "Analyse spirituelle de votre environnement en cours...";
-            
-            // Simuler une analyse pour créer un effet
-            setTimeout(() => {
-                const userLat = position.coords.latitude;
-                const userLon = position.coords.longitude;
-                const generatedVortexes = generateRandomVortexes(userLat, userLon);
-                
-                displayResults(generatedVortexes);
-                statusDiv.textContent = `Analyse terminée. ${generatedVortexes.length} lieux de contemplation identifiés.`;
-            }, 2000);
+        async function analyzeLocation(position) {
+            statusDiv.innerHTML = '<div class="loader"></div><span>Analyse des données cartographiques en cours...</span>';
+            const { latitude, longitude } = position.coords;
+
+            try {
+                const places = await fetchRealPlaces(latitude, longitude);
+                displayResults(places, latitude, longitude);
+                if (places.length > 0) {
+                   statusDiv.textContent = `Analyse terminée. ${places.length} lieux de contemplation identifiés.`;
+                } else {
+                   statusDiv.textContent = "Aucun lieu notable identifié dans un rayon de 5 km. Votre environnement est considéré comme neutre.";
+                }
+            } catch (error) {
+                console.error("Erreur lors de la récupération des lieux:", error);
+                statusDiv.textContent = "Erreur lors de la communication avec le service de cartographie.";
+            } finally {
+                analyzeBtn.disabled = false;
+            }
         }
 
         function handleError(error) {
             switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    statusDiv.textContent = "Vous avez refusé la demande de géolocalisation.";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    statusDiv.textContent = "L'information de localisation est indisponible.";
-                    break;
-                case error.TIMEOUT:
-                    statusDiv.textContent = "La demande de localisation a expiré.";
-                    break;
-                case error.UNKNOWN_ERROR:
-                    statusDiv.textContent = "Une erreur inconnue est survenue.";
-                    break;
+                case error.PERMISSION_DENIED: statusDiv.textContent = "Vous avez refusé la demande de géolocalisation."; break;
+                case error.POSITION_UNAVAILABLE: statusDiv.textContent = "L'information de localisation est indisponible."; break;
+                case error.TIMEOUT: statusDiv.textContent = "La demande de localisation a expiré."; break;
+                default: statusDiv.textContent = "Une erreur inconnue est survenue."; break;
             }
+            analyzeBtn.disabled = false;
         }
 
-        function generateRandomVortexes(lat, lon) {
-            const vortexes = [];
-            const numVortexes = Math.floor(Math.random() * 4) + 3; // Entre 3 et 6 lieux
+        async function fetchRealPlaces(lat, lon) {
+            const radius = 5000; // 5 km
+            const query = `
+                [out:json][timeout:25];
+                (
+                  node["amenity"~"place_of_worship|bar|nightclub|casino|library"](around:${radius},${lat},${lon});
+                  way["amenity"~"place_of_worship|bar|nightclub|casino|library"](around:${radius},${lat},${lon});
+                  node["leisure"~"park|nature_reserve"](around:${radius},${lat},${lon});
+                  way["leisure"~"park|nature_reserve"](around:${radius},${lat},${lon});
+                  node["landuse"="cemetery"](around:${radius},${lat},${lon});
+                  way["landuse"="cemetery"](around:${radius},${lat},${lon});
+                  node["shop"="mall"](around:${radius},${lat},${lon});
+                  way["shop"="mall"](around:${radius},${lat},${lon});
+                );
+                out center;`;
 
-            for (let i = 0; i < numVortexes; i++) {
-                const distanceKm = Math.random() * 5; // Distance jusqu'à 5 km
-                const angle = Math.random() * 360;
+            const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Erreur API: ${response.statusText}`);
+            }
+            const data = await response.json();
+            
+            const classifiedPlaces = data.elements.map(el => {
+                const tags = el.tags;
+                let classificationKey = null;
 
-                // Calcul approximatif d'une nouvelle position (pas besoin d'être ultra-précis pour une simulation)
-                const latOffset = (distanceKm / 111) * Math.cos(angle * Math.PI / 180);
-                const lonOffset = (distanceKm / (111 * Math.cos(lat * Math.PI / 180))) * Math.sin(angle * Math.PI / 180);
-
-                const vortexLat = lat + latOffset;
-                const vortexLon = lon + lonOffset;
-
-                const types = ['positive', 'negative', 'neutral'];
-                const randomType = types[Math.floor(Math.random() * types.length)];
+                if (tags.amenity) classificationKey = tags.amenity;
+                else if (tags.leisure) classificationKey = tags.leisure;
+                else if (tags.landuse) classificationKey = tags.landuse;
+                else if (tags.shop) classificationKey = tags.shop;
                 
-                vortexes.push({
-                    type: randomType,
-                    distance: distanceKm.toFixed(2),
-                    lat: vortexLat,
-                    lon: vortexLon
-                });
-            }
-            return vortexes;
+                const classification = placeClassification[classificationKey] || { type: 'neutral', label: 'Lieu quotidien' };
+                const placeLat = el.center ? el.center.lat : el.lat;
+                const placeLon = el.center ? el.center.lon : el.lon;
+
+                return {
+                    name: tags.name,
+                    ...classification,
+                    lat: placeLat,
+                    lon: placeLon
+                };
+            }).filter(p => p.lat && p.lon); // S'assurer que la place a des coordonnées
+
+            return classifiedPlaces;
         }
 
-        function displayResults(vortexes) {
+        function displayResults(places, userLat, userLon) {
             resultsDiv.innerHTML = '';
-            vortexes.forEach(vortex => {
-                const info = interpretations[vortex.type];
+            places.forEach(place => {
+                const info = interpretations[place.type];
+                const distance = calculateDistance(userLat, userLon, place.lat, place.lon);
+
                 const card = `
-                    <div class="bg-gray-800 border ${info.class} rounded-lg p-6 flex flex-col transition-transform duration-300 transform hover:-translate-y-1">
-                        <div class="flex items-center mb-3">
-                            <span class="text-3xl mr-3">${info.icon}</span>
-                            <h3 class="text-xl font-bold text-white">${info.title}</h3>
-                        </div>
-                        <p class="text-gray-400 mb-4">
-                            Situé à environ <strong class="text-emerald-400">${vortex.distance} km</strong> de votre position.
-                        </p>
-                        <div class="border-t border-gray-700 pt-4">
-                            <h4 class="font-semibold text-gray-200 mb-2">${info.description}</h4>
-                            <p class="text-gray-300 text-sm">${info.details}</p>
+                    <div class="bg-gray-800 border ${info.class} rounded-lg p-6 flex flex-col transition-transform duration-300 transform hover:-translate-y-1 h-full">
+                        <div class="flex-grow">
+                            <div class="flex items-start mb-3">
+                                <span class="text-3xl mr-3">${info.icon}</span>
+                                <div>
+                                    <h3 class="text-xl font-bold text-white">${place.name || info.title}</h3>
+                                    <p class="text-sm text-gray-400">${place.label}</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 mb-4">
+                                Situé à environ <strong class="text-emerald-400">${distance.toFixed(2)} km</strong> de votre position.
+                            </p>
+                            <div class="border-t border-gray-700 pt-4">
+                                <h4 class="font-semibold text-gray-200 mb-2">${info.description}</h4>
+                                <p class="text-gray-300 text-sm">${info.details}</p>
+                            </div>
                         </div>
                     </div>
                 `;
                 resultsDiv.innerHTML += card;
             });
         }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of the Earth in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
     </script>
 
 </body>
 </html>
+
