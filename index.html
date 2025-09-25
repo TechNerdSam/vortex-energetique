@@ -139,9 +139,23 @@
 
             try {
                 const places = await fetchRealPlaces(latitude, longitude);
-                displayResults(places, latitude, longitude);
-                if (places.length > 0) {
-                   statusDiv.textContent = `Analyse terminée. ${places.length} lieux de contemplation identifiés.`;
+
+                const placesWithDistance = places.map(place => ({
+                    ...place,
+                    distance: calculateDistance(latitude, longitude, place.lat, place.lon)
+                }));
+
+                placesWithDistance.sort((a, b) => a.distance - b.distance);
+
+                displayResults(placesWithDistance);
+                
+                const totalFound = placesWithDistance.length;
+                if (totalFound > 0) {
+                   if (totalFound > 15) {
+                       statusDiv.textContent = `Analyse terminée. Affichage des 15 lieux les plus proches sur ${totalFound} trouvés.`;
+                   } else {
+                       statusDiv.textContent = `Analyse terminée. ${totalFound} lieux de contemplation identifiés.`;
+                   }
                 } else {
                    statusDiv.textContent = "Aucun lieu notable identifié dans un rayon de 5 km. Votre environnement est considéré comme neutre.";
                 }
@@ -210,11 +224,21 @@
             return classifiedPlaces;
         }
 
-        function displayResults(places, userLat, userLon) {
+        function displayResults(places) {
             resultsDiv.innerHTML = '';
-            places.forEach(place => {
+            
+            const placesToDisplay = places.slice(0, 15);
+
+            placesToDisplay.forEach(place => {
                 const info = interpretations[place.type];
-                const distance = calculateDistance(userLat, userLon, place.lat, place.lon);
+                const distance = place.distance;
+
+                let distanceString;
+                if (distance < 1) {
+                    distanceString = `${Math.round(distance * 1000)} m`;
+                } else {
+                    distanceString = `${distance.toFixed(2)} km`;
+                }
 
                 const card = `
                     <div class="bg-gray-800 border ${info.class} rounded-lg p-6 flex flex-col transition-transform duration-300 transform hover:-translate-y-1 h-full">
@@ -227,7 +251,7 @@
                                 </div>
                             </div>
                             <p class="text-gray-400 mb-4">
-                                Situé à environ <strong class="text-emerald-400">${distance.toFixed(2)} km</strong> de votre position.
+                                Situé à environ <strong class="text-emerald-400">${distanceString}</strong> de votre position.
                             </p>
                             <div class="border-t border-gray-700 pt-4">
                                 <h4 class="font-semibold text-gray-200 mb-2">${info.description}</h4>
