@@ -3,454 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instrument d'Analyse de Champ Subtil v8.1</title>
-    <!-- Tailwind CSS -->
+    <title>Analyseur de Lieux de Contemplation</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #020418;
-            color: #e0e0e0;
-            overflow: hidden;
+            font-family: 'Inter', sans-serif;
         }
-        h1, .font-orbitron {
-            font-family: 'Orbitron', sans-serif;
+        .card-glow-positive {
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4), 0 0 5px rgba(34, 197, 94, 0.6);
         }
-        #background-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: radial-gradient(ellipse at 70% 30%, #4f46e5 0%, transparent 50%),
-                        radial-gradient(ellipse at 30% 70%, #ec4899 0%, transparent 50%);
-            animation: cosmic-flow 25s alternate infinite;
+        .card-glow-negative {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4), 0 0 5px rgba(239, 68, 68, 0.6);
         }
-        @keyframes cosmic-flow {
-            0% { transform: scale(1) rotate(0deg); opacity: 0.6; }
-            100% { transform: scale(1.5) rotate(90deg); opacity: 0.8; }
-        }
-        .panel-glass {
-            background: rgba(17, 24, 39, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
-        .scan-button {
-            background-image: linear-gradient(to right, #2dd4bf, #38bdf8, #818cf8);
-            background-size: 200% auto;
-            transition: background-position 0.5s, transform 0.2s, box-shadow 0.3s, background-color 0.3s;
-        }
-        .scan-button:hover:not(:disabled) {
-            background-position: right center;
-            transform: scale(1.05);
-            box-shadow: 0 0 20px #38bdf8, 0 0 30px #818cf8;
-        }
-        .scan-button:disabled {
-            cursor: not-allowed;
-            background-image: none;
-            background-color: #334155;
-            box-shadow: none;
-            transform: scale(1);
-        }
-        .spinner {
-            border-color: rgba(56, 189, 248, 0.2);
-            border-left-color: #ec4899;
-            border-right-color: #ec4899;
-            animation: spin 1.5s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        #radarCanvas {
-            background: radial-gradient(circle, rgba(14, 116, 144, 0.1) 0%, rgba(8, 47, 73, 0.5) 100%);
-            border-radius: 50%;
-        }
-        .radar-sweep {
-            transform-origin: 100% 50%;
-            animation: spin-slow 4s linear infinite;
-        }
-        @keyframes spin-slow {
-            to { transform: rotate(360deg); }
-        }
-        #resultText::after {
-            content: '█';
-            animation: blink 1s step-end infinite;
-        }
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border-width: 0;
-        }
-        #vortexList::-webkit-scrollbar {
-            width: 8px;
-        }
-        #vortexList::-webkit-scrollbar-track {
-            background: rgba(17, 24, 39, 0.2);
-            border-radius: 4px;
-        }
-        #vortexList::-webkit-scrollbar-thumb {
-            background: rgba(56, 189, 248, 0.4);
-            border-radius: 4px;
-        }
-        #vortexList::-webkit-scrollbar-thumb:hover {
-            background: rgba(56, 189, 248, 0.6);
+        .card-glow-neutral {
+            box-shadow: 0 0 15px rgba(107, 114, 128, 0.3), 0 0 5px rgba(107, 114, 128, 0.5);
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div id="background-animation"></div>
-    <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-
-    <main class="w-full max-w-2xl mx-auto text-center z-10">
-        
+    <div class="w-full max-w-3xl text-center">
+        <!-- En-tête et Avertissement Islamique -->
         <header class="mb-8">
-             <div class="inline-block p-4 mb-4 text-cyan-300 bg-gray-900/50 rounded-full border border-cyan-500/30">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m15.5 15.5-2.5-2.5-2.5 2.5-2.5-2.5 2.5-2.5 2.5-2.5 2.5 2.5 2.5 2.5-2.5 2.5z"></path>
-                </svg>
-            </div>
-            <h1 class="text-4xl md:text-5xl font-bold tracking-wider text-white uppercase" style="text-shadow: 0 0 10px #38bdf8;">Analyse de Champ Subtil</h1>
-            <p class="text-lg text-gray-400 mt-2">Instrument d'analyse des fluctuations énergétiques locales</p>
+            <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-500 mb-2">Analyseur de Lieux de Contemplation</h1>
+            <p class="text-gray-400 text-lg">Un outil de réflexion spirituelle en accord avec les principes de l'Islam.</p>
         </header>
 
-        <div class="panel-glass rounded-2xl p-6 md:p-10">
-            <p id="mainMessage" class="mb-8 text-gray-300 transition-colors duration-300 min-h-[48px]">
-                Le système est prêt. Calibrez les capteurs sur votre position actuelle pour une micro-analyse.
+        <div class="bg-gray-800 border border-yellow-500 rounded-lg p-6 mb-8 text-left">
+            <h2 class="text-xl font-bold text-yellow-400 mb-2">Note importante sur la Croyance (Aqida)</h2>
+            <p class="text-gray-300">
+                Ce site est un outil symbolique pour encourager la contemplation (<strong class="font-semibold text-white">Tafakkur</strong>) de la création d'Allah (SWT). Il est fondamental de se rappeler que :
             </p>
-            <button id="scanButton" class="scan-button w-full md:w-auto px-12 py-4 text-xl font-bold text-gray-900 uppercase rounded-lg transition-all duration-300 ease-in-out transform focus:outline-none">
-                Lancer l'Analyse
+            <ul class="list-disc list-inside mt-3 space-y-2 text-gray-300">
+                <li>Toute forme de bienfait, de méfait, d'énergie ou d'influence ne provient <strong class="font-semibold text-white">que d'Allah (SWT) seul</strong>. Attribuer un pouvoir à un lieu est une forme de Shirk.</li>
+                <li>Les "lieux" identifiés ici ne possèdent aucun pouvoir intrinsèque. Ils sont interprétés comme des environnements qui peuvent, par leur nature, soit <strong class="font-semibold text-white">faciliter le rappel d'Allah (Dhikr)</strong>, soit y faire obstacle.</li>
+                <li>L'objectif est de prendre conscience de son environnement pour renforcer son lien avec le Créateur.</li>
+            </ul>
+        </div>
+
+        <!-- Bouton de Contrôle -->
+        <div class="mb-8">
+            <button id="analyzeBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-full transition-transform duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+                Analyser les environs (5 km)
             </button>
         </div>
 
-        <section id="scanIndicatorContainer" class="mt-8 h-24 flex items-center justify-center">
-            <div id="scanIndicator" class="hidden flex-col items-center justify-center">
-                <div class="spinner w-12 h-12 rounded-full border-4"></div>
-                <p id="scanStatus" class="mt-4 text-cyan-300 font-orbitron tracking-widest animate-pulse">CALIBRATION...</p>
-            </div>
-        </section>
-
-        <div id="resultModal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-            <div id="modalContent" class="panel-glass w-full max-w-3xl rounded-2xl p-6 md:p-8 text-center relative transform transition-all duration-300 scale-95 opacity-0">
-                <button id="closeModalButton" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors" aria-label="Fermer la fenêtre">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-                <h2 id="modalTitle" class="text-2xl font-orbitron font-bold text-cyan-300 mb-2">Résultat de l'Analyse</h2>
-                 <p id="kIndexDisplay" class="text-sm text-gray-400 mb-4"></p>
-                
-                <div id="modalBody" class="flex flex-col md:flex-row gap-6 items-center">
-                    <div class="w-full md:w-1/3">
-                        <p id="resultText" class="text-lg text-white mb-4 max-w-lg min-h-[28px]"></p>
-                        <div id="radarContainer" class="hidden w-full aspect-square max-w-[250px] mx-auto relative">
-                            <canvas id="radarCanvas" width="250" height="250"></canvas>
-                            <div class="absolute inset-0 pointer-events-none">
-                                <div class="w-full h-px bg-cyan-400/20 absolute top-1/2 left-0 -translate-y-1/2"></div>
-                                <div class="h-full w-px bg-cyan-400/20 absolute left-1/2 top-0 -translate-x-1/2"></div>
-                                <div class="absolute inset-0 text-cyan-300 font-orbitron text-xs">
-                                    <span class="absolute top-1 left-1/2 -translate-x-1/2">N</span>
-                                    <span class="absolute right-1 top-1/2 -translate-y-1/2">E</span>
-                                    <span class="absolute bottom-1 left-1/2 -translate-x-1/2">S</span>
-                                    <span class="absolute left-1 top-1/2 -translate-y-1/2">W</span>
-                                </div>
-                            </div>
-                            <div class="absolute top-0 left-0 w-full h-full">
-                                <div class="w-1/2 h-full bg-gradient-to-r from-cyan-400/0 to-cyan-400/30 radar-sweep"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="vortexList" class="text-left text-sm w-full md:w-2/3 max-h-72 overflow-y-auto pr-2"></div>
-                </div>
-            </div>
+        <!-- Section des Résultats -->
+        <div id="status" class="text-gray-400 h-8"></div>
+        <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
+            <!-- Les cartes de résultats seront insérées ici par JavaScript -->
         </div>
+    </div>
 
-        <footer class="mt-12 text-gray-600 text-xs">
-            <p>Données basées sur l'analyse heuristique des fluctuations géolocales. Pour usage exploratoire.</p>
-        </footer>
-    </main>
+    <footer class="text-center text-gray-500 mt-12">
+        <p>&copy; 2024 - Outil de Réflexion Spirituelle. Louange à Allah, Seigneur des Mondes.</p>
+    </footer>
 
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- CONFIGURATION ---
-        const CONFIG = {
-            LOCAL_VORTEX_MIN_RADIUS_M: 10,
-            LOCAL_VORTEX_MAX_RADIUS_M: 50,
-            MAX_LOCAL_VORTEXES: 7,
-            SCAN_STEP_DELAY_MS: 1200,
-            GEOLOCATION_TIMEOUT_MS: 10000,
-        };
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const statusDiv = document.getElementById('status');
+        const resultsDiv = document.getElementById('results');
 
-        // --- CACHE DES ÉLÉMENTS DU DOM ---
-        const DOMElements = {
-            scanButton: document.getElementById('scanButton'), mainMessage: document.getElementById('mainMessage'), scanIndicator: document.getElementById('scanIndicator'), scanStatus: document.getElementById('scanStatus'), resultModal: document.getElementById('resultModal'), modalContent: document.getElementById('modalContent'), closeModalButton: document.getElementById('closeModalButton'), modalTitle: document.getElementById('modalTitle'), kIndexDisplay: document.getElementById('kIndexDisplay'), resultText: document.getElementById('resultText'), radarContainer: document.getElementById('radarContainer'), vortexList: document.getElementById('vortexList'), announcer: document.getElementById('announcer'), radarCanvas: document.getElementById('radarCanvas'),
-        };
-        const radarCtx = DOMElements.radarCanvas.getContext('2d');
-
-        // --- MOTEUR D'ANALYSE DÉTERMINISTE ---
-        const SeededPRNG = {
-            seed: 0,
-            setSeed: function(s) {
-                this.seed = s % 2147483647;
-                if (this.seed <= 0) this.seed += 2147483646;
+        // Contenu textuel conforme à l'Islam
+        const interpretations = {
+            positive: {
+                title: "Lieu d'Énergie Positive (Propice au Rappel)",
+                icon: '🌙',
+                class: 'border-green-500 card-glow-positive',
+                description: "Interprétation Spirituelle (Bienfaits)",
+                details: "Ce type de lieu, souvent calme et harmonieux (parc, cours d'eau, lieu peu fréquenté), est propice à la contemplation de la beauté de la création d'Allah (SWT). Il peut aider à apaiser le cœur, à se concentrer pour la prière (Salat) et le rappel (Dhikr). Les bienfaits ne viennent pas du lieu, mais de la facilité qu'il offre pour se tourner vers le Créateur."
             },
-            next: function() {
-                this.seed = (this.seed * 16807) % 2147483647;
-                return this.seed;
+            negative: {
+                title: "Lieu d'Énergie Négative (Source de Distraction)",
+                icon: '🔥',
+                class: 'border-red-500 card-glow-negative',
+                description: "Interprétation Spirituelle (Méfaits)",
+                details: "Un lieu bruyant, chaotique ou associé à des futilités (grand centre commercial, zone de divertissement excessif) peut être une source de distraction. Il peut éloigner l'esprit du rappel d'Allah et encourager la 'Dunya' (les biens de ce monde). Les méfaits ne sont pas une 'énergie' du lieu, mais le risque de négliger ses devoirs spirituels à cause de l'environnement."
             },
-            nextFloat: function() {
-                return (this.next() - 1) / 2147483646;
-            },
-            nextInt: function(min, max) {
-                return Math.floor(this.nextFloat() * (max - min + 1)) + min;
-            },
-            pick: function(arr) {
-                return arr[this.nextInt(0, arr.length - 1)];
+            neutral: {
+                title: "Lieu d'Énergie Neutre (Environnement Quotidien)",
+                icon: '🏠',
+                class: 'border-gray-500 card-glow-neutral',
+                description: "Interprétation Spirituelle",
+                details: "Ceci représente un lieu de la vie quotidienne (zone résidentielle, bureau). Il n'a pas d'influence particulière, mais il offre une opportunité constante. C'est un rappel que chaque instant, même le plus banal, peut être transformé en acte d'adoration par l'intention (Niyyah) et le rappel constant d'Allah (SWT) dans nos activités journalières."
             }
         };
 
-        const DataGenerator = {
-            generateLocalVortexes: (position, timestamp) => {
-                const { latitude, longitude } = position.coords;
-                // Création d'une graine complexe et unique
-                const seed = Math.floor(latitude * 1e7) ^ Math.floor(longitude * 1e7) ^ timestamp;
-                SeededPRNG.setSeed(seed);
-
-                const kIndex = SeededPRNG.nextInt(0, 9);
-                let kIndexDesc = "Calme";
-                if (kIndex > 4) kIndexDesc = "Actif";
-                if (kIndex > 6) kIndexDesc = "Orage";
-
-                const localVortexes = [];
-                const count = SeededPRNG.nextInt(2, CONFIG.MAX_LOCAL_VORTEXES);
-
-                for (let i = 0; i < count; i++) {
-                    const angle = SeededPRNG.nextFloat() * 2 * Math.PI;
-                    const distanceInMeters = SeededPRNG.nextFloat() * (CONFIG.LOCAL_VORTEX_MAX_RADIUS_M - CONFIG.LOCAL_VORTEX_MIN_RADIUS_M) + CONFIG.LOCAL_VORTEX_MIN_RADIUS_M;
-                    const latOffset = (distanceInMeters / 111320) * Math.sin(angle);
-                    const lonOffset = (distanceInMeters / (111320 * Math.cos(latitude * Math.PI / 180))) * Math.cos(angle);
-                    
-                    const polarity = SeededPRNG.pick(["Positif", "Négatif", "Neutre"]);
-                    let polarityDescription = "Indique une signature équilibrée, sans influence notable.";
-                    if (polarity === "Positif") polarityDescription = "Dénote une influence harmonique, favorisant la cohérence du champ.";
-                    if (polarity === "Négatif") polarityDescription = "Révèle une décohérence locale, potentiellement disruptive.";
-
-                    localVortexes.push({
-                        name: `PFQ #${SeededPRNG.nextInt(1000, 9999)}`, // Point de Fluctuation Quantique
-                        lat: latitude + latOffset, lon: longitude + lonOffset,
-                        type: SeededPRNG.pick(["quantique", "subspatial", "gravitique", "temporel"]),
-                        intensity: SeededPRNG.pick(["très faible", "faible", "fluctuante"]),
-                        frequency: `${(SeededPRNG.nextFloat() * 94 + 1.5).toFixed(2)} GHz`,
-                        signature: SeededPRNG.pick(["Cohérente", "Déphasée", "Interférente", "Binaire"]),
-                        stability: `${SeededPRNG.nextInt(15, 70)}%`,
-                        class: `Classe ${SeededPRNG.pick(["Epsilon", "Gamma", "Delta"])}`,
-                        amplitude: `${(SeededPRNG.nextFloat() * 45 + 5).toFixed(2)} µT`,
-                        density: `${(SeededPRNG.nextFloat() * 1.8 + 0.1).toFixed(3)} eV/cm³`,
-                        phaseShift: `${(SeededPRNG.nextFloat() - 0.5).toFixed(4)} ps`,
-                        polarity, polarityDescription, isLocal: true
-                    });
-                }
-                return { vortexes: localVortexes, kIndex: { value: kIndex, description: kIndexDesc } };
+        analyzeBtn.addEventListener('click', () => {
+            statusDiv.textContent = "Demande de votre localisation...";
+            resultsDiv.innerHTML = '';
+            
+            if (!navigator.geolocation) {
+                statusDiv.textContent = "La géolocalisation n'est pas supportée par votre navigateur.";
+                return;
             }
-        };
 
-        // --- GESTION D'ÉTAT DE L'UI ---
-        const uiState = { IDLE: 'IDLE', SCANNING: 'SCANNING', SHOWING_RESULTS: 'SHOWING_RESULTS' };
-        let currentState = uiState.IDLE;
-        let scanInterval;
+            navigator.geolocation.getCurrentPosition(analyzeLocation, handleError);
+        });
 
-        const setUIState = (newState) => {
-            currentState = newState;
-            switch (newState) {
-                case uiState.IDLE: 
-                    DOMElements.scanButton.disabled = false; 
-                    DOMElements.scanButton.textContent = "Lancer l'Analyse"; 
-                    DOMElements.scanIndicator.classList.add('hidden'); 
-                    DOMElements.mainMessage.textContent = "Le système est prêt. Calibrez les capteurs sur votre position actuelle pour une micro-analyse."; 
-                    DOMElements.mainMessage.classList.remove('text-red-400', 'text-yellow-400'); 
-                    if(scanInterval) clearInterval(scanInterval); 
-                    break;
-                case uiState.SCANNING: 
-                    DOMElements.scanButton.disabled = true; 
-                    DOMElements.scanButton.textContent = "ANALYSE..."; 
-                    DOMElements.scanIndicator.classList.remove('hidden'); 
-                    DOMElements.scanIndicator.style.display = 'flex'; 
-                    startScanAnimation(); 
-                    break;
-                case uiState.SHOWING_RESULTS: 
-                    if(scanInterval) clearInterval(scanInterval); 
-                    DOMElements.scanIndicator.classList.add('hidden');
-                    DOMElements.mainMessage.textContent = "Le système est prêt. Calibrez les capteurs sur votre position actuelle pour une micro-analyse.";
-                    DOMElements.mainMessage.classList.remove('text-red-400', 'text-yellow-400');
-                    DOMElements.scanButton.disabled = false; 
-                    DOMElements.scanButton.textContent = "Nouvelle Analyse"; 
-                    showModal(); 
-                    break;
-            }
-        };
-
-        // --- FONCTIONS PRINCIPALES ---
-        const handleScanClick = () => {
-            if (currentState !== uiState.IDLE) return;
-            if (!navigator.geolocation) { displayError({ message: "La géolocalisation n'est pas supportée par votre navigateur." }); return; }
-            setUIState(uiState.SCANNING);
-            runScanProcess();
-        };
-
-        const runScanProcess = async () => {
-            try {
-                const position = await getPositionWithFallback();
-                const timestamp = Date.now();
-                const analysisData = analyzeVortexes(position, timestamp);
-                displayResults(analysisData);
-            } catch (error) {
-                displayError(error);
-            }
-        };
-        
-        const getPositionWithFallback = () => {
-            return new Promise(async (resolve, reject) => {
-                updateScanStatus("Demande d'autorisation...", 'text-gray-300');
-                try {
-                    updateScanStatus("Recherche d'un signal GPS de haute précision...", 'text-yellow-400');
-                    const position = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: CONFIG.GEOLOCATION_TIMEOUT_MS, maximumAge: 0 }));
-                    resolve(position);
-                } catch (err) {
-                    if (err.code === 3) { // TIMEOUT
-                        updateScanStatus("Signal de haute précision non trouvé. Tentative en mode standard...", 'text-yellow-400');
-                        try {
-                            const position = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: false, timeout: CONFIG.GEOLOCATION_TIMEOUT_MS, maximumAge: 60000 }));
-                            resolve(position);
-                        } catch (fallbackErr) { reject(fallbackErr); }
-                    } else { reject(err); }
-                }
-            });
-        };
-
-        const analyzeVortexes = (position, timestamp) => {
-            const { vortexes, kIndex } = DataGenerator.generateLocalVortexes(position, timestamp);
-            const { latitude: userLat, longitude: userLon } = position.coords;
-            const processedVortexes = vortexes
-                .map(vortex => ({...vortex, distance: getDistance(userLat, userLon, vortex.lat, vortex.lon) * 1000, bearing: getBearing(userLat, userLon, vortex.lat, vortex.lon)}))
-                .sort((a, b) => a.distance - b.distance);
-            return { vortexes: processedVortexes, kIndex };
-        };
-
-        // --- GESTION DE L'AFFICHAGE ---
-        const displayResults = (analysisData) => {
-            const { vortexes, kIndex } = analysisData;
-            setupModal("Résultat de l'Analyse", false);
-            DOMElements.kIndexDisplay.textContent = `Conditions Géomagnétiques : Indice Kp ${kIndex.value} (${kIndex.description})`;
-            DOMElements.radarContainer.style.display = 'block';
-            DOMElements.vortexList.style.display = 'block';
-
-            if (vortexes.length > 0) {
-                const resultMessage = `${vortexes.length} fluctuations locales détectées.`;
-                typeWriter(DOMElements.resultText, resultMessage);
+        function analyzeLocation(position) {
+            statusDiv.textContent = "Analyse spirituelle de votre environnement en cours...";
+            
+            // Simuler une analyse pour créer un effet
+            setTimeout(() => {
+                const userLat = position.coords.latitude;
+                const userLon = position.coords.longitude;
+                const generatedVortexes = generateRandomVortexes(userLat, userLon);
                 
-                DOMElements.vortexList.innerHTML = vortexes.map(v => {
-                    let borderColor = 'border-gray-500'; let textColor = 'text-gray-300';
-                    if (v.polarity === 'Positif') { borderColor = 'border-cyan-500'; textColor = 'text-cyan-300'; }
-                    if (v.polarity === 'Négatif') { borderColor = 'border-red-500'; textColor = 'text-red-400'; }
+                displayResults(generatedVortexes);
+                statusDiv.textContent = `Analyse terminée. ${generatedVortexes.length} lieux de contemplation identifiés.`;
+            }, 2000);
+        }
 
-                    return `
-                    <div class="panel-glass rounded-lg p-3 mb-2 border-l-4 ${borderColor}">
-                        <h3 class="font-bold text-white font-orbitron">${v.name}</h3>
-                        <p><span class="font-semibold text-gray-400">Position:</span> ${v.distance.toFixed(1)} m / ${v.bearing.toFixed(0)}°</p>
-                        <p class="mt-1 ${textColor}"><span class="font-semibold text-gray-400">Polarité:</span> ${v.polarity}</p>
-                        <p class="text-xs text-gray-400 italic mt-1">"${v.polarityDescription}"</p>
-                        <div class="grid grid-cols-2 gap-x-3 text-xs mt-2 border-t border-gray-700 pt-2">
-                            <p><span class="font-semibold text-gray-400">Type:</span> ${v.type}</p>
-                            <p><span class="font-semibold text-gray-400">Intensité:</span> ${v.intensity}</p>
-                            <p><span class="font-semibold text-gray-400">Stabilité:</span> ${v.stability}</p>
-                            <p><span class="font-semibold text-gray-400">Classe:</span> ${v.class}</p>
-                            <p><span class="font-semibold text-gray-400">Fréq.:</span> ${v.frequency}</p>
-                            <p><span class="font-semibold text-gray-400">Signature:</span> ${v.signature}</p>
-                            <p><span class="font-semibold text-gray-400">Amplitude:</span> ${v.amplitude}</p>
-                            <p><span class="font-semibold text-gray-400">Densité:</span> ${v.density}</p>
-                            <p class="col-span-2"><span class="font-semibold text-gray-400">Déphasage Temp.:</span> ${v.phaseShift}</p>
-                        </div>
-                    </div>`;
-                }).join('');
-                drawRadar(vortexes);
-                announce(`Analyse terminée. ${resultMessage}`);
-            } else {
-                const noResultMessage = "Aucune anomalie significative détectée dans la portée du scanner.";
-                typeWriter(DOMElements.resultText, noResultMessage);
-                DOMElements.radarContainer.style.display = 'none';
-                DOMElements.vortexList.innerHTML = '';
-                announce(`Analyse terminée. ${noResultMessage}`);
+        function handleError(error) {
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    statusDiv.textContent = "Vous avez refusé la demande de géolocalisation.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    statusDiv.textContent = "L'information de localisation est indisponible.";
+                    break;
+                case error.TIMEOUT:
+                    statusDiv.textContent = "La demande de localisation a expiré.";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    statusDiv.textContent = "Une erreur inconnue est survenue.";
+                    break;
             }
-            setUIState(uiState.SHOWING_RESULTS);
-        };
-        
-        const displayError = (error) => { const { title, message } = formatGeoError(error); setupModal(title, true); DOMElements.kIndexDisplay.textContent = ' '; DOMElements.resultText.textContent = message; DOMElements.radarContainer.style.display = 'none'; DOMElements.vortexList.style.display = 'none'; announce(`Erreur: ${message}`); setUIState(uiState.SHOWING_RESULTS); };
-        const setupModal = (title, isError) => { DOMElements.modalTitle.textContent = title; DOMElements.modalTitle.classList.toggle('text-red-400', isError); DOMElements.resultText.classList.toggle('text-red-400', isError); };
-        const showModal = () => { DOMElements.resultModal.classList.remove('hidden'); setTimeout(() => { DOMElements.modalContent.classList.remove('scale-95', 'opacity-0'); DOMElements.closeModalButton.focus(); }, 10); };
-        const closeModal = () => { DOMElements.modalContent.classList.add('scale-95', 'opacity-0'); setTimeout(() => { DOMElements.resultModal.classList.add('hidden'); setUIState(uiState.IDLE); DOMElements.scanButton.focus(); }, 300); };
-        const startScanAnimation = () => { const messages = ["BALAYAGE SECTORIEL...", "TRIANGULATION SUB spatiale...", "INTERPRÉTATION..."]; let index = 0; const update = () => { DOMElements.scanStatus.textContent = messages[index]; announce(messages[index]); index = (index + 1) % messages.length; }; scanInterval = setInterval(update, CONFIG.SCAN_STEP_DELAY_MS); };
-        const updateScanStatus = (message, colorClass = 'text-gray-300') => { DOMElements.mainMessage.textContent = message; DOMElements.mainMessage.className = `mb-8 transition-colors duration-300 min-h-[48px] ${colorClass}`; announce(message); };
+        }
 
-        const drawRadar = (vortexes) => {
-            const { width, height } = DOMElements.radarCanvas;
-            const center = { x: width / 2, y: height / 2 };
-            const maxRadius = width / 2 * 0.9;
-            radarCtx.clearRect(0, 0, width, height);
-            radarCtx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
-            radarCtx.lineWidth = 1;
-            [0.25, 0.5, 0.75, 1].forEach(r => { radarCtx.beginPath(); radarCtx.arc(center.x, center.y, maxRadius * r, 0, 2 * Math.PI); radarCtx.stroke(); });
-            radarCtx.fillStyle = 'rgba(56, 189, 248, 0.8)';
-            radarCtx.beginPath(); radarCtx.arc(center.x, center.y, 4, 0, 2 * Math.PI); radarCtx.fill();
+        function generateRandomVortexes(lat, lon) {
+            const vortexes = [];
+            const numVortexes = Math.floor(Math.random() * 4) + 3; // Entre 3 et 6 lieux
+
+            for (let i = 0; i < numVortexes; i++) {
+                const distanceKm = Math.random() * 5; // Distance jusqu'à 5 km
+                const angle = Math.random() * 360;
+
+                // Calcul approximatif d'une nouvelle position (pas besoin d'être ultra-précis pour une simulation)
+                const latOffset = (distanceKm / 111) * Math.cos(angle * Math.PI / 180);
+                const lonOffset = (distanceKm / (111 * Math.cos(lat * Math.PI / 180))) * Math.sin(angle * Math.PI / 180);
+
+                const vortexLat = lat + latOffset;
+                const vortexLon = lon + lonOffset;
+
+                const types = ['positive', 'negative', 'neutral'];
+                const randomType = types[Math.floor(Math.random() * types.length)];
+                
+                vortexes.push({
+                    type: randomType,
+                    distance: distanceKm.toFixed(2),
+                    lat: vortexLat,
+                    lon: vortexLon
+                });
+            }
+            return vortexes;
+        }
+
+        function displayResults(vortexes) {
+            resultsDiv.innerHTML = '';
             vortexes.forEach(vortex => {
-                const range = CONFIG.LOCAL_VORTEX_MAX_RADIUS_M;
-                const distanceRatio = Math.min(vortex.distance / range, 1);
-                const angleRad = (vortex.bearing - 90) * (Math.PI / 180);
-                const x = center.x + Math.cos(angleRad) * distanceRatio * maxRadius;
-                const y = center.y + Math.sin(angleRad) * distanceRatio * maxRadius;
-                radarCtx.save();
-                if (vortex.polarity === 'Positif') { radarCtx.fillStyle = `rgba(56, 189, 248, ${SeededPRNG.nextFloat() * 0.5 + 0.5})`; radarCtx.shadowColor = '#38bdf8';
-                } else if (vortex.polarity === 'Négatif') { radarCtx.fillStyle = `rgba(244, 63, 94, ${SeededPRNG.nextFloat() * 0.5 + 0.5})`; radarCtx.shadowColor = '#f43f5e';
-                } else { radarCtx.fillStyle = `rgba(107, 114, 128, ${SeededPRNG.nextFloat() * 0.5 + 0.5})`; radarCtx.shadowColor = '#6b7280'; }
-                radarCtx.shadowBlur = 10;
-                radarCtx.beginPath();
-                radarCtx.arc(x, y, 5, 0, 2 * Math.PI);
-                radarCtx.fill();
-                radarCtx.restore();
+                const info = interpretations[vortex.type];
+                const card = `
+                    <div class="bg-gray-800 border ${info.class} rounded-lg p-6 flex flex-col transition-transform duration-300 transform hover:-translate-y-1">
+                        <div class="flex items-center mb-3">
+                            <span class="text-3xl mr-3">${info.icon}</span>
+                            <h3 class="text-xl font-bold text-white">${info.title}</h3>
+                        </div>
+                        <p class="text-gray-400 mb-4">
+                            Situé à environ <strong class="text-emerald-400">${vortex.distance} km</strong> de votre position.
+                        </p>
+                        <div class="border-t border-gray-700 pt-4">
+                            <h4 class="font-semibold text-gray-200 mb-2">${info.description}</h4>
+                            <p class="text-gray-300 text-sm">${info.details}</p>
+                        </div>
+                    </div>
+                `;
+                resultsDiv.innerHTML += card;
             });
-        };
-        
-        // --- FONCTIONS UTILITAIRES ---
-        const formatGeoError = (error) => { let title = "Erreur de Géolocalisation"; let message = error.message || "Une erreur inconnue est survenue."; if (error.code) { switch (error.code) { case 1: message = "L'accès à votre position a été refusé. Veuillez l'autoriser dans les paramètres de votre navigateur."; break; case 2: message = "Votre position n'a pas pu être déterminée. Vérifiez votre connexion ou vos paramètres GPS."; break; case 3: message = "La demande de géolocalisation a expiré. Vérifiez votre connexion et réessayez."; break; } } return { title, message }; };
-        const typeWriter = (element, text, speed = 40) => { element.innerHTML = ""; let i = 0; const type = () => { if (i < text.length) { element.innerHTML += text.charAt(i); i++; setTimeout(type, speed); } }; type(); };
-        const announce = (message) => { DOMElements.announcer.textContent = message; };
-        const getDistance = (lat1, lon1, lat2, lon2) => { const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2; return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))); };
-        const getBearing = (lat1, lon1, lat2, lon2) => { const toRad = Math.PI / 180; const y = Math.sin((lon2 - lon1) * toRad) * Math.cos(lat2 * toRad); const x = Math.cos(lat1 * toRad) * Math.sin(lat2 * toRad) - Math.sin(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.cos((lon2 - lon1) * toRad); return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360; };
-
-        // --- INITIALISATION ---
-        DOMElements.scanButton.addEventListener('click', handleScanClick);
-        DOMElements.closeModalButton.addEventListener('click', closeModal);
-        DOMElements.resultModal.addEventListener('click', (event) => { if (event.target === DOMElements.resultModal) closeModal(); });
-        document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && currentState === uiState.SHOWING_RESULTS) closeModal(); });
-        setUIState(uiState.IDLE);
-        announce("Instrument d'analyse de champ subtil prêt.");
-    });
+        }
     </script>
+
 </body>
 </html>
-
