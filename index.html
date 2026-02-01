@@ -482,8 +482,36 @@
                 const placeLat = el.center ? el.center.lat : el.lat;
                 const placeLon = el.center ? el.center.lon : el.lon;
 
+                // --- LOGIQUE AMÉLIORÉE DU NOM ---
+                let niceName = tags['name:fr'] || tags.name || tags.alt_name;
+                
+                // Si pas de nom, on construit un nom descriptif plus intelligent
+                if (!niceName) {
+                     if (tags.religion) {
+                         niceName = `${classification.label} (${tags.religion}${tags.denomination ? ' - ' + tags.denomination : ''})`;
+                     } else {
+                         niceName = classification.label;
+                     }
+                }
+
+                // --- EXTRACTION DES DÉTAILS ---
+                const details = [];
+                if (tags['addr:street']) details.push(`${tags['addr:street']} ${tags['addr:housenumber'] || ''}`);
+                if (tags['addr:city']) details.push(tags['addr:city']);
+                const fullAddress = details.join(', ');
+                
+                const extraInfo = [];
+                if (tags.religion && !niceName.includes(tags.religion)) extraInfo.push(tags.religion);
+                if (tags.denomination && !niceName.includes(tags.denomination)) extraInfo.push(tags.denomination);
+                if (tags.opening_hours) extraInfo.push("🕒 Horaires dispo");
+                if (tags.website) extraInfo.push("🌐 Site web");
+                if (tags.phone) extraInfo.push("📞 Téléphone");
+
                 return {
-                    name: tags.name || tags.amenity || "Lieu sans nom",
+                    name: niceName,
+                    address: fullAddress,
+                    tags: tags, // On garde les tags pour vérifier la description
+                    extraInfo: extraInfo,
                     ...classification,
                     lat: placeLat,
                     lon: placeLon
@@ -522,21 +550,44 @@
                 const mapLink = `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lon}#map=17/${place.lat}/${place.lon}`;
                 const delay = index * 50;
 
+                // Construction HTML pour l'adresse et les badges
+                const addressHtml = place.address ? 
+                    `<div class="flex items-start text-xs text-slate-500 dark:text-gray-400 mb-2 mt-1">
+                        <svg class="w-3 h-3 mr-1 mt-0.5 flex-shrink-0 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span>${place.address}</span>
+                    </div>` : '';
+
+                const badgesHtml = place.extraInfo && place.extraInfo.length > 0 
+                    ? `<div class="flex flex-wrap gap-1.5 mb-4 border-b border-slate-100 dark:border-white/5 pb-3">
+                        ${place.extraInfo.map(info => `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-white/10">${info}</span>`).join('')}
+                       </div>` 
+                    : '<div class="mb-4 border-b border-slate-100 dark:border-white/5 pb-1"></div>';
+
+                // Description personnalisée ou standard
+                const descriptionContent = place.tags.description 
+                    ? `<p class="text-sm text-slate-700 dark:text-gray-200 italic mb-2">"${place.tags.description}"</p>` 
+                    : '';
+
                 const card = `
                     <div class="result-card glass-panel glass-card-hover rounded-2xl p-6 flex flex-col h-full border ${typeStyles[place.type]}" data-type="${place.type}" style="animation: fadeInUp 0.5s ease forwards ${delay}ms">
                         <div class="flex-grow">
-                            <div class="flex justify-between items-start mb-4">
+                            <div class="flex justify-between items-start mb-2">
                                 <div class="w-12 h-12 rounded-full bg-white/40 dark:bg-white/5 flex items-center justify-center text-2xl border border-white/20 dark:border-white/10 shadow-sm">
                                     ${place.icon}
                                 </div>
                                 <span class="text-xs font-mono text-slate-500 dark:text-gray-500 bg-white/50 dark:bg-void/50 px-2 py-1 rounded border border-white/10">${distance}</span>
                             </div>
                             
-                            <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-1 leading-tight">${place.name}</h3>
-                            <p class="text-xs text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-4 border-b border-slate-200 dark:border-white/5 pb-4">${place.label}</p>
+                            <h3 class="text-xl font-bold text-slate-800 dark:text-white leading-tight">${place.name}</h3>
+                            ${addressHtml}
+                            ${badgesHtml}
                             
                             <div class="prose prose-invert">
-                                <p class="text-sm text-slate-600 dark:text-gray-300 font-light leading-relaxed">${place.interpretation}</p>
+                                ${descriptionContent}
+                                <p class="text-sm text-slate-600 dark:text-gray-300 font-light leading-relaxed">
+                                    <strong class="text-xs uppercase tracking-wider opacity-70 block mb-1 text-slate-400 dark:text-gray-500">${place.label}</strong>
+                                    ${place.interpretation}
+                                </p>
                             </div>
                         </div>
                         
