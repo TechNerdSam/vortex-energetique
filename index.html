@@ -364,7 +364,7 @@
             statusDiv.innerHTML = '<span class="animate-pulse">Acquisition de la position GPS...</span>';
             
             if (!navigator.geolocation) {
-                useSimulationMode("Votre navigateur ne supporte pas la géolocalisation.");
+                handleGeoError({ code: 0 }); // Force l'erreur pour proposer la simulation
                 return;
             }
 
@@ -380,24 +380,39 @@
 
         function handleGeoError(error) {
             let msg = "Erreur de localisation.";
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    msg = "Permission refusée. Activez la localisation dans votre navigateur.";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    msg = "Position indisponible.";
-                    break;
-                case error.TIMEOUT:
-                    msg = "Délai d'attente dépassé.";
-                    break;
+            if (error) {
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        msg = "Permission refusée. Autorisez le GPS.";
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        msg = "Position indisponible.";
+                        break;
+                    case error.TIMEOUT:
+                        msg = "Délai d'attente dépassé.";
+                        break;
+                }
             }
-            // On propose de simuler
-            statusDiv.innerHTML = `<span class="text-amber-500 font-bold">${msg}</span>`;
-            setTimeout(() => {
-                const useSim = confirm(`${msg} Voulez-vous utiliser le mode simulation (Paris) ?`);
-                if(useSim) useSimulationMode("Mode simulation activé.");
-                else resetBtn();
-            }, 500);
+            
+            // Remplacement du confirm() natif (souvent bloqué) par une UI élégante et intégrée
+            statusDiv.innerHTML = `
+                <div class="flex items-center justify-center flex-wrap gap-3 bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 px-4 py-2 rounded-lg text-sm animate-fade-in-up">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <span class="font-medium">${msg}</span>
+                    <button id="simBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 rounded-md font-bold transition-all shadow-sm active:scale-95">Simuler (Paris)</button>
+                    <button id="cancelSimBtn" class="underline opacity-80 hover:opacity-100 transition-opacity">Annuler</button>
+                </div>
+            `;
+
+            // Attachement des événements aux nouveaux boutons
+            document.getElementById('simBtn').addEventListener('click', () => {
+                useSimulationMode("Mode simulation activé (Paris).");
+            });
+            
+            document.getElementById('cancelSimBtn').addEventListener('click', () => {
+                statusDiv.innerHTML = '';
+                resetBtn(); // Restaure le bouton "Lancer le Scan"
+            });
         }
 
         function resetBtn() {
